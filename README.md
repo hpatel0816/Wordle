@@ -1,6 +1,6 @@
 # Wordle
 
-### Harsh Patel, Dhairya Prajapati, Radhe Patel
+### Contributors: Harsh Patel, Dhairya Prajapati, Radhe Patel
 
 ## Front End
 
