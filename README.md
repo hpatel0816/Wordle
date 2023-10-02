@@ -1,6 +1,6 @@
-### Wordle
+# Wordle
 
-## Harsh Patel, Dhairya Prajapati, Radhe Patel
+### Harsh Patel, Dhairya Prajapati, Radhe Patel
 
 ## Front End
 
