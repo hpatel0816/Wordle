@@ -1,10 +1,6 @@
 # Getting Started with Create React App
 
-<<<<<<< HEAD
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-=======
-### Contributors: Harsh Patel, Dhairya Prajapati, Radhe Patel
->>>>>>> 84e6a0c664e17c237367da1ce4be6cc554a9a145
 
 ## Available Scripts
 
