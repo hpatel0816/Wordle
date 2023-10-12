@@ -3,7 +3,7 @@ import Key from './Key';
 import { AppContext } from '../App';
 
 function Keyboard() {
-  const {onEnter, onDelete, onSelectLetter} = useContext(AppContext);
+  const {onEnter, onDelete, onSelectLetter, disabledLetters} = useContext(AppContext);
 
 
   const keys1 = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"];
@@ -45,15 +45,15 @@ function Keyboard() {
   return (
     <div className = "keyboard" onKeyDown={handleKeyboard}>
       <div className = "line1">{keys1.map((key) => {
-        return <Key keyVal = {key} />;
+        return <Key keyVal = {key} disabled = {disabledLetters.includes(key)}/>;
       })}</div>
       <div className = "line2">{keys2.map((key) => {
-        return <Key keyVal = {key} />;
+        return <Key keyVal = {key} disabled = {disabledLetters.includes(key)}/>;
       })}</div>
       <div className = "line3">
         <Key keyVal = {"ENTER"} bigKey/>
         {keys3.map((key) => {
-        return <Key keyVal = {key} />;
+        return <Key keyVal = {key} disabled = {disabledLetters.includes(key)}/>;
         })}
         <Key keyVal = {"DELETE"} bigKey/>
       </div>
