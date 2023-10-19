@@ -1,5 +1,5 @@
 import React, {useContext} from 'react'
-import { AppContext } from '../App';
+import { AppContext } from '../Wordle';
 
 function GameOver() {
     const {gameOver, setGameOver, correctWord, currAttempt} = useContext(AppContext)
