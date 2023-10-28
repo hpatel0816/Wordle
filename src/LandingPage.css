@@ -1,0 +1,43 @@
+.main-div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.nav-bar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #f2f2f2;
+    padding: 15px;
+    text-align: right;
+}
+
+.nav-btns {
+    width:fit-content;
+    height: 35px;
+    color: aqua;
+    background-color: black;
+    margin: 0px 10px;
+    border-radius: 10px;
+}
+
+#login-btn {
+    margin-right: 25px;
+    width: 75px;
+}
+
+#signup-btn {
+    width: 90px;
+}
+
+.dialogue-box {
+    width: 50%;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}

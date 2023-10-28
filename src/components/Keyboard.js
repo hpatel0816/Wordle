@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useContext} from 'react'
 import Key from './Key';
-import { AppContext } from '../App';
+import { AppContext } from '../Wordle';
 
 function Keyboard() {
   const {onEnter, onDelete, onSelectLetter, disabledLetters} = useContext(AppContext);
