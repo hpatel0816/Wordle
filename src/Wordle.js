@@ -45,9 +45,8 @@ function Wordle() {
 
     let currWord = "";
     for (let i =  0; i < 5; i++) {
-      currWord += display[currAttempt.attempt][i];
+      currWord += display[currAttempt.attempt][i].toLowerCase();
     }
-    console.log(currWord)
     if (wordSet.has(currWord.toLowerCase())) {
       setCurrAttempt({attempt: currAttempt.attempt + 1, letterPos: 0});
     } else {
@@ -55,12 +54,12 @@ function Wordle() {
     }
 
     if (currWord === correctWord) {
-      setGameOver({gameOver: true, guessedWord: true});
+      setGameOver({ gameOver: true, guessedWord: true });
       return;
     }
-
-    if (currAttempt.attempt === 5) {
-      setGameOver({gameOver: true, guessedWord : false});
+    if (currAttempt.attempt === 5 && wordSet.has(currWord.toLowerCase())) {
+      setGameOver({ gameOver: true, guessedWord: false });
+      return;
     }
   };
 
@@ -82,10 +81,9 @@ function Wordle() {
           setDisabledLetter,
           disabledLetters,
           gameOver,
-          setGameOver
         }}
       >
-        <div className = "game">
+        <div className="game">
           <Display />
           {gameOver.gameOver ? <GameOver /> : <Keyboard />}
         </div>
@@ -93,5 +91,4 @@ function Wordle() {
     </div>
   );
 }
-
 export default Wordle;
