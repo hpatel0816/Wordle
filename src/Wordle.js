@@ -1,14 +1,14 @@
-import './App.css';
-import Display from "./AppParts/Display";
-import Keyboard from "./AppParts/Keyboard";
+import './Wordle.css';
+import Display from "./components/Display";
+import Keyboard from "./components/Keyboard";
 import {createContext, useEffect, useState} from "react";
 import { displayDefault, generateWordSet } from './Words';
-import GameOver from './AppParts/GameOver';
+import GameOver from './components/GameOver';
 
 
 export const AppContext = createContext();
 
-function App() {
+function Wordle() {
   const [display, setDisplay] = useState(displayDefault);
   const [currAttempt, setCurrAttempt] = useState({attempt: 0, letterPos: 0})
   const [wordSet, setWordSet] = useState(new Set());
@@ -47,7 +47,7 @@ function App() {
     for (let i =  0; i < 5; i++) {
       currWord += display[currAttempt.attempt][i];
     }
-
+    console.log(currWord)
     if (wordSet.has(currWord.toLowerCase())) {
       setCurrAttempt({attempt: currAttempt.attempt + 1, letterPos: 0});
     } else {
@@ -94,4 +94,4 @@ function App() {
   );
 }
 
-export default App;
+export default Wordle;
