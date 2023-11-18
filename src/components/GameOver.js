@@ -1,13 +1,13 @@
-import React, {useContext} from 'react'
-import { AppContext } from '../Wordle';
+import React, { useContext } from "react";
+import { AppContext } from "../Wordle";
 
 function GameOver() {
-    const {gameOver, setGameOver, correctWord, currAttempt} = useContext(AppContext)
+  const {currAttempt, gameOver, correctWord} = useContext(AppContext);
   return (
-    <div className = "gameOver">
-        <h3>{gameOver.guessedWord ? "You Correctly Guessed" : "Could Not Guess The Word"}</h3>
-        <h1>Word: {correctWord}</h1>
-        {gameOver.guessedWord && (<h3> You Guessed In {currAttempt.attempt} Tries</h3>)}
+    <div className="gameOver">
+      <h3>{gameOver.guessedWord ? "You Correctly Guessed the Wordle" : "You Failed to Guess the Word"}</h3>
+      <h1>Correct Word: {correctWord}</h1>
+      {gameOver.guessedWord && (<h3>You guessed in {currAttempt.attempt} attempts</h3>)}
     </div>
   );
 }
