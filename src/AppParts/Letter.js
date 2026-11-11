@@ -1,25 +1,16 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { AppContext } from '../App';
+import { scoreGuess } from '../gameLogic';
 
 
 function Letter({letterPosition, attemptValue}) {
-    const {display, correctWord, currAttempt, setDisabledLetter} = useContext(AppContext);
+    const {display, correctWord, currAttempt} = useContext(AppContext);
     const letter = display[attemptValue][letterPosition];
 
-
-    const correct = correctWord.toUpperCase()[letterPosition] === letter;
-    const almost = !correct && letter !== "" && correctWord.toUpperCase().includes(letter);
-
-    const letterState = 
-      currAttempt.attempt > attemptValue && 
-      (correct ? "correct" : almost ? "almost" : "error");
-
-      useEffect(() => {
-        if (letter !== "" && !correct && !almost) {
-            setDisabledLetter((prev) => [...prev, letter]);
-        }
-         
-      }, [currAttempt.attempt]);
+    // Only color rows that have been submitted.
+    const letterState = currAttempt.attempt > attemptValue
+      ? scoreGuess(display[attemptValue].join(""), correctWord)[letterPosition]
+      : undefined;
 
     return (
       <div className="letter" id = {letterState}>

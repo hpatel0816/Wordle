@@ -1,0 +1,2 @@
+# Keep the word list LF-only on every OS so parsing is consistent.
+*.txt text eol=lf

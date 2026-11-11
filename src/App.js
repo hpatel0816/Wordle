@@ -57,6 +57,11 @@ function App() {
 
     setCurrAttempt({attempt: currAttempt.attempt + 1, letterPos: 0});
 
+    // Grey out keys for letters that are not in the answer at all.
+    const answerUpper = correctWord.toUpperCase();
+    const absent = display[currAttempt.attempt].filter((l) => !answerUpper.includes(l));
+    setDisabledLetter((prev) => [...new Set([...prev, ...absent])]);
+
     if (currWord === correctWord) {
       setGameOver({gameOver: true, guessedWord: true});
       return;
