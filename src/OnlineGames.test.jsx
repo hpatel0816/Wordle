@@ -14,6 +14,9 @@ vi.mock("./online/api", () => ({
     joinBoard: vi.fn(),
     submitGuess: vi.fn(),
     getBoard: vi.fn(),
+    createDuel: vi.fn(),
+    startDuel: vi.fn(),
+    subscribe: vi.fn(() => () => {}),
   },
 }));
 
@@ -42,6 +45,7 @@ beforeEach(() => {
   api.getProfile.mockResolvedValue({ display_name: "Jo" });
   api.joinBoard.mockResolvedValue(null);
   api.getBoard.mockResolvedValue(boardData());
+  api.subscribe.mockImplementation(() => () => {});
 });
 
 afterEach(() => {
@@ -160,4 +164,114 @@ test("Play Unlimited leaves the board and clears the link", async () => {
   await settle();
   expect(window.location.search).toBe("");
   expect(screen.getByRole("button", { name: "Unlimited" })).toHaveAttribute("aria-pressed", "true");
+});
+
+describe("live duels", () => {
+  const now = () => new Date().toISOString();
+  const later = (seconds) => new Date(Date.now() + seconds * 1000).toISOString();
+  const player = (name, extra = {}) => ({
+    name, is_me: false, is_host: false, is_winner: false, finished: false, solved: false,
+    guesses_used: 0, seconds: null, rows: [], ...extra,
+  });
+
+  function duelData(overrides = {}) {
+    return boardData({
+      id: "d1",
+      kind: "duel",
+      status: "lobby",
+      is_host: true,
+      server_now: now(),
+      starts_at: null,
+      ends_at: later(3600),
+      winner: null,
+      players: [player("Jo", { is_me: true, is_host: true })],
+      ...overrides,
+    });
+  }
+
+  test("the host waits in the lobby, then starts once a friend joins", async () => {
+    window.history.replaceState(null, "", "/?board=d1");
+    api.getBoard.mockResolvedValue(duelData());
+    let ping;
+    api.subscribe.mockImplementation((id, onChange) => {
+      ping = onChange;
+      return () => {};
+    });
+    render(<App />);
+    await settle();
+
+    expect(screen.getByText("Waiting for a friend to join…")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start duel" })).toBeDisabled();
+    press("c");
+    expect(document.querySelector(".row").children[0]).toHaveTextContent("");
+
+    // The server pings when Riley joins.
+    api.getBoard.mockResolvedValue(duelData({ players: [player("Jo", { is_me: true, is_host: true }), player("Riley")] }));
+    await act(async () => ping());
+    const start = screen.getByRole("button", { name: "Start duel" });
+    expect(start).toBeEnabled();
+
+    api.startDuel.mockResolvedValue(null);
+    api.getBoard.mockResolvedValue(
+      duelData({
+        status: "active",
+        starts_at: now(),
+        ends_at: later(300),
+        players: [player("Jo", { is_me: true, is_host: true }), player("Riley")],
+      })
+    );
+    fireEvent.click(start);
+    await settle();
+    expect(api.startDuel).toHaveBeenCalledWith("d1");
+
+    // The countdown is over, so typing works and the duel bar shows.
+    press("c");
+    expect(document.querySelector(".row").children[0]).toHaveTextContent("C");
+    expect(screen.getByRole("timer", { name: "Time left" })).toHaveTextContent(/^[45]:\d\d$/);
+    expect(within(screen.getByRole("list", { name: "Opponents" })).getByText("Riley")).toBeInTheDocument();
+  });
+
+  test("when someone else solves it first, the duel ends with them as the winner", async () => {
+    window.history.replaceState(null, "", "/?board=d1");
+    const active = {
+      status: "active",
+      is_host: false,
+      starts_at: now(),
+      ends_at: later(300),
+      players: [player("Riley", { is_host: true }), player("Jo", { is_me: true })],
+    };
+    api.getBoard.mockResolvedValue(duelData(active));
+    let ping;
+    api.subscribe.mockImplementation((id, onChange) => {
+      ping = onChange;
+      return () => {};
+    });
+    render(<App />);
+    await settle();
+
+    api.submitGuess.mockResolvedValue({ result: ["almost", "error", "error", "error", "error"], finished: false, match_over: false, answer: null });
+    await guess("about");
+
+    api.getBoard.mockResolvedValue(
+      duelData({
+        ...active,
+        status: "finished",
+        winner: "Riley",
+        answer: "crane",
+        players: [
+          player("Riley", { is_host: true, is_winner: true, finished: true, solved: true, guesses_used: 2, seconds: 40, rows: [] }),
+          player("Jo", { is_me: true, guesses_used: 1, rows: [] }),
+        ],
+      })
+    );
+    await act(async () => ping());
+
+    expect(screen.getByText("Riley won the duel")).toBeInTheDocument();
+    expect(screen.getByText("Word: CRANE")).toBeInTheDocument();
+    expect(screen.getByText("🏆 2/6 in 0:40")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New duel" })).toBeInTheDocument();
+    // Typing does nothing once the duel is over.
+    press("c");
+    expect(document.querySelectorAll(".row")[1].children[0]).toHaveTextContent("");
+  });
 });

@@ -1,7 +1,6 @@
 import { onlineEnabled, supabase } from "./supabaseClient";
 
-// Thin wrappers around the database functions in
-// supabase/migrations/*_friend_boards.sql. Every call signs the player in
+// Thin wrappers around the database functions in supabase/migrations/. Every call signs the player in
 // as a guest first if needed. Errors are thrown with a message that can be
 // shown to the player.
 
@@ -37,6 +36,19 @@ export const api = {
   joinBoard: (id) => call("join_match", { p_match: id }),
   submitGuess: (id, word) => call("submit_guess", { p_match: id, p_guess: word }),
   getBoard: (id) => call("get_match", { p_match: id }),
+  createDuel: (hardMode) => call("create_duel", { p_hard_mode: hardMode }),
+  startDuel: (id) => call("start_duel", { p_match: id }),
+
+  // Calls onChange whenever the server pings this match (someone joined,
+  // guessed, or the duel started or ended). Returns an unsubscribe function.
+  subscribe(id, onChange) {
+    if (!onlineEnabled) return () => {};
+    const channel = supabase
+      .channel(`match:${id}`)
+      .on("broadcast", { event: "changed" }, () => onChange())
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  },
 };
 
 export const BOARD_PARAM = "board";

@@ -213,3 +213,35 @@ describe("friend boards", () => {
     expect(state).toMatchObject({ attempt: 1, status: "playing", justFinished: false });
   });
 });
+
+describe("live duels", () => {
+  const lobby = () =>
+    gameReducer(loaded(), { type: "START", mode: "duel", boardId: "d1", waiting: true });
+
+  test("input is ignored until the countdown ends", () => {
+    const state = lobby();
+    expect(state.status).toBe("waiting");
+    expect(gameReducer(state, { type: "ADD_LETTER", letter: "a" }).board[0][0]).toBe("");
+    const begun = gameReducer(state, { type: "BEGIN" });
+    expect(begun.status).toBe("playing");
+    expect(gameReducer(begun, { type: "BEGIN" })).toBe(begun);
+  });
+
+  test("duel guesses wait for the server", () => {
+    const state = guess(gameReducer(lobby(), { type: "BEGIN" }), "about");
+    expect(state.pending).toBe(true);
+  });
+
+  test("when someone else wins, a player still playing loses and sees the answer", () => {
+    const playing = type(gameReducer(lobby(), { type: "BEGIN" }), "ab");
+    const over = gameReducer(playing, { type: "MATCH_OVER", answer: "crane" });
+    expect(over).toMatchObject({ status: "lost", answer: "crane", justFinished: false });
+    expect(gameReducer(over, { type: "MATCH_OVER", answer: "crane" })).toBe(over);
+  });
+
+  test("a player who already won keeps the win", () => {
+    let state = guess(gameReducer(lobby(), { type: "BEGIN" }), "crane");
+    state = gameReducer(state, { type: "GUESS_RESULT", result: Array(5).fill("correct"), answer: "crane" });
+    expect(gameReducer(state, { type: "MATCH_OVER", answer: "crane" }).status).toBe("won");
+  });
+});

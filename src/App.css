@@ -834,3 +834,115 @@ button:focus-visible {
 .miniTile.almost {
   background-color: var(--color-almost);
 }
+
+/* ----- Live duels ----- */
+.friendsIntro {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.friendsIntro li {
+  margin-bottom: 4px;
+}
+
+.duelLobby {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  padding-bottom: 8px;
+}
+
+.duelLobby h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.lobbyPlayers {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.lobbyPlayers li {
+  padding: 6px 12px;
+  border-radius: 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  font-weight: bold;
+}
+
+.tag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background-color: var(--color-brand);
+  color: var(--color-brand-text);
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.countdown {
+  margin: 24px 0;
+  font-size: 64px;
+  font-weight: bold;
+  color: var(--color-brand-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Opponents and time left, above the board during a duel. */
+.duelBar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.duelTimer {
+  font-size: 20px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.duelTimer.urgent {
+  color: #e05252;
+}
+
+.opponents {
+  flex: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+}
+
+.opponent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.opponentName {
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.miniTile.empty {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-tile-border);
+}
+
+/* Leave room for the duel bar on short screens. */
+.game.duel .display {
+  width: min(330px, 100%, calc((100dvh - 440px) * 5 / 6));
+}

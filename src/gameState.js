@@ -10,9 +10,9 @@ export const emptyBoard = () =>
   Array.from({ length: MAX_GUESSES }, () => Array(WORD_LENGTH).fill(""));
 
 export const initialState = {
-  status: "loading", // "loading" | "playing" | "won" | "lost"
-  mode: "unlimited", // "unlimited" | "daily" | "challenge" | "board"
-  boardId: null, // friend board id when mode is "board"
+  status: "loading", // "loading" | "waiting" (duel lobby/countdown) | "playing" | "won" | "lost"
+  mode: "unlimited", // "unlimited" | "daily" | "challenge" | "board" | "duel"
+  boardId: null, // server match id for online modes ("board" or "duel")
   pending: false, // board mode: waiting for the server to score a guess
   day: null, // daily puzzle number when mode is "daily"
   gameId: 0, // increases with every new round
@@ -29,6 +29,9 @@ export const initialState = {
   hardMode: false, // revealed hints must be used in later guesses
 };
 
+// Rounds scored by the server instead of in the browser.
+export const ONLINE_MODES = ["board", "duel"];
+
 // Hard mode can only be switched before the first guess or after a round.
 export function canChangeHardMode(state) {
   return state.status !== "playing" || state.attempt === 0;
@@ -39,7 +42,7 @@ export function canChangeHardMode(state) {
 // server already scored ({ word, result }), for friend boards.
 function startGame(
   state,
-  { answer = "", mode = "unlimited", day = null, boardId = null, guesses = [], rows = [], hardMode }
+  { answer = "", mode = "unlimited", day = null, boardId = null, guesses = [], rows = [], hardMode, waiting = false }
 ) {
   let next = {
     ...state,
@@ -65,6 +68,8 @@ function startGame(
     if (next.status !== "playing") break;
     next = applyResult({ ...next, board: setTile(next.board, next.attempt, null, word) }, result);
   }
+  // A duel in its lobby or countdown waits for BEGIN before taking input.
+  if (waiting && next.status === "playing") next = { ...next, status: "waiting" };
   return { ...next, justFinished: false };
 }
 
@@ -160,9 +165,9 @@ export function gameReducer(state, action) {
         if (error) return withMessage(state, error, { shake: true });
       }
 
-      // Friend boards are scored by the server (the answer isn't here):
+      // Online rounds are scored by the server (the answer isn't here):
       // the caller sends the guess and replies with GUESS_RESULT.
-      if (state.mode === "board") return { ...state, pending: true };
+      if (ONLINE_MODES.includes(state.mode)) return { ...state, pending: true };
 
       return scoreRow(state, guess);
     }
@@ -172,6 +177,21 @@ export function gameReducer(state, action) {
       if (!state.pending) return state;
       const next = applyResult(state, action.result);
       return { ...next, answer: action.answer ?? state.answer };
+    }
+
+    // A duel's countdown finished: typing is allowed.
+    case "BEGIN":
+      if (state.status !== "waiting") return state;
+      return { ...state, status: "playing" };
+
+    // { answer } when a duel ended (someone won, time ran out, or everyone
+    // is out of guesses). A player still playing has lost.
+    case "MATCH_OVER": {
+      const answer = action.answer ?? state.answer;
+      if (state.status !== "playing" && state.status !== "waiting") {
+        return answer === state.answer ? state : { ...state, answer };
+      }
+      return { ...state, status: "lost", answer, pending: false, letterPos: 0 };
     }
 
     // { message } when the server rejected the pending guess.

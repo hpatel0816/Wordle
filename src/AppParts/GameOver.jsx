@@ -38,12 +38,22 @@ function NextDaily({ onReady }) {
   );
 }
 
+// "You won the duel!", "Riley won the duel", or "Nobody solved it".
+function duelHeadline(state, match) {
+  if (state.status === "won") return "You won the duel!";
+  if (match?.winner) return `${match.winner} won the duel`;
+  if (match?.status === "finished") return "Nobody solved it";
+  return "Out of guesses";
+}
+
 function GameOver() {
-  const { state, dispatch, startRound, openModal, display, board, copyInvite } = useContext(AppContext);
+  const { state, dispatch, startRound, openModal, display, match, online, copyInvite } = useContext(AppContext);
   const won = state.status === "won";
   const daily = state.mode === "daily";
   const unlimited = state.mode === "unlimited";
   const friendBoard = state.mode === "board";
+  const duel = state.mode === "duel";
+  const onlineGame = friendBoard || duel;
 
   const share = async () => {
     const link = friendBoard ? boardUrl(state.boardId) : undefined;
@@ -54,16 +64,16 @@ function GameOver() {
   return (
     <div className="gameOver">
       <div role="status">
-        <p className="gameOverResult">{won ? "You Correctly Guessed" : "Could Not Guess The Word"}</p>
-        <h2>Word: {state.answer.toUpperCase()}</h2>
-        {won && !friendBoard && (
+        <p className="gameOverResult">{duel ? duelHeadline(state, match) : won ? "You Correctly Guessed" : "Could Not Guess The Word"}</p>
+        {state.answer ? <h2>Word: {state.answer.toUpperCase()}</h2> : <p className="muted">Waiting for the others to finish…</p>}
+        {won && !onlineGame && (
           <p className="gameOverResult">
             You Guessed In {state.attempt} {state.attempt === 1 ? "Try" : "Tries"}
           </p>
         )}
       </div>
       {daily && <NextDaily onReady={() => startRound("daily")} />}
-      {friendBoard && <Scoreboard board={board} />}
+      {onlineGame && <Scoreboard board={match} />}
       <div className="gameOverActions">
         {/* autoFocus lets Enter start the next round */}
         <button type="button" className="playAgain" onClick={() => startRound("unlimited")} autoFocus>
@@ -72,7 +82,11 @@ function GameOver() {
         <button type="button" className="secondaryButton" onClick={share}>
           Share
         </button>
-        {friendBoard ? (
+        {duel ? (
+          <button type="button" className="secondaryButton" onClick={() => online.createDuel(state.hardMode)}>
+            New duel
+          </button>
+        ) : friendBoard ? (
           <button type="button" className="secondaryButton" onClick={copyInvite}>
             Invite friends
           </button>

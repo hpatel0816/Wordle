@@ -17,12 +17,14 @@ import { readPreference, writePreference } from './storage';
 import { roundFor, saveGame } from './savedGames';
 import ModeSwitch from './AppParts/ModeSwitch';
 import FriendsModal from './AppParts/FriendsModal';
-import { useFriendBoard } from './online/useFriendBoard';
+import { useOnlineGame } from './online/useOnlineGame';
+import DuelLobby from './AppParts/DuelLobby';
+import DuelBar from './AppParts/DuelBar';
 import { boardUrl } from './online/api';
 import { SHARE_MESSAGES, shareOrCopy } from './share';
 import { APP_NAME } from './brand';
 
-// Provides { state, dispatch, startRound, openModal, display, board,
+// Provides { state, dispatch, startRound, openModal, display, match, online,
 // copyInvite }; all game rules live in gameReducer.
 export const AppContext = createContext(null);
 
@@ -110,10 +112,11 @@ function App() {
     setModal(null);
   }, []);
 
-  const friends = useFriendBoard({ state, dispatch, openModal: setModal, closeModal });
+  const online = useOnlineGame({ state, dispatch, openModal: setModal, closeModal });
 
   const copyInvite = async () => {
-    const result = await shareOrCopy(`Play my ${APP_NAME} friend board: ${boardUrl(state.boardId)}`);
+    const what = state.mode === "duel" ? "Join my live duel on" : "Play my friend board on";
+    const result = await shareOrCopy(`${what} ${APP_NAME}: ${boardUrl(state.boardId)}`);
     if (result === "copied") dispatch({ type: "SHOW_MESSAGE", text: "Invite link copied" });
     else if (SHARE_MESSAGES[result]) dispatch({ type: "SHOW_MESSAGE", text: SHARE_MESSAGES[result] });
   };
@@ -168,19 +171,19 @@ function App() {
 
   const gameOver = state.status === "won" || state.status === "lost";
 
-  // A friend board's hard mode is set by whoever created it.
-  const boardRules = state.mode === "board" && state.status === "playing";
+  // An online game's hard mode is set by whoever created it.
+  const boardRules = ["board", "duel"].includes(state.mode) && ["playing", "waiting"].includes(state.status);
   const hardModeLocked = boardRules || !canChangeHardMode(state);
   const settings = [
     {
       id: "hard-mode",
       label: "Hard mode",
       description: boardRules
-        ? "Set by this friend board"
+        ? "Set by whoever started this game"
         : hardModeLocked
           ? "Can only be changed at the start of a round"
           : "Any revealed hints must be used in later guesses",
-      checked: state.status === "playing" ? state.hardMode : hardModePref,
+      checked: ["playing", "waiting"].includes(state.status) ? state.hardMode : hardModePref,
       disabled: hardModeLocked,
       onChange: setHardMode,
     },
@@ -205,7 +208,8 @@ function App() {
     startRound,
     openModal: setModal,
     display: { highContrast, light: theme === "light" },
-    board: friends.board,
+    match: online.match,
+    online,
     copyInvite,
   };
 
@@ -231,10 +235,11 @@ function App() {
       </header>
       <AppContext.Provider value={context}>
         <Toast />
-        <main className="game">
+        <main className={state.mode === "duel" && state.status === "playing" ? "game duel" : "game"}>
           <ModeSwitch dailyNumber={getDayNumber() + 1} />
+          {state.mode === "duel" && state.status === "playing" && <DuelBar />}
           <Display />
-          {gameOver ? <GameOver /> : <Keyboard />}
+          {gameOver ? <GameOver /> : state.status === "waiting" ? <DuelLobby /> : <Keyboard />}
         </main>
         {modal === "help" && <HelpModal onClose={closeModal} />}
         {modal === "settings" && (
@@ -246,12 +251,12 @@ function App() {
         )}
         {modal === "friends" && (
           <FriendsModal
-            friends={friends}
+            friends={online}
             hardMode={hardModePref}
-            inBoard={state.mode === "board"}
+            inBoard={["board", "duel"].includes(state.mode)}
             onCopyInvite={copyInvite}
             onClose={() => {
-              friends.cancelInvite();
+              online.cancelInvite();
               closeModal();
             }}
           />

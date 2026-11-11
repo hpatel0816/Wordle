@@ -4,7 +4,7 @@ import Modal from './Modal';
 // Friend boards: pick a display name, create a board, or (when opened from
 // an invite link) join one.
 function FriendsModal({ friends, hardMode, inBoard, onCopyInvite, onClose }) {
-  const { profile, loadProfile, invite, saveName, createBoard } = friends;
+  const { profile, loadProfile, invite, saveName, createBoard, createDuel } = friends;
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,17 +36,23 @@ function FriendsModal({ friends, hardMode, inBoard, onCopyInvite, onClose }) {
   };
 
   return (
-    <Modal title={invite ? "Join a Friend Board" : "Play with Friends"} titleId="friends-title" onClose={onClose}>
+    <Modal
+      title={invite ? (invite.kind === "duel" ? "Join a Live Duel" : "Join a Friend Board") : "Play with Friends"}
+      titleId="friends-title"
+      onClose={onClose}
+    >
       {invite ? (
         <p>
-          <strong>{invite.creator}</strong> invited you to a friend board. Everyone plays the same
-          word, then compares results on a shared scoreboard.
+          <strong>{invite.creator}</strong>{" "}
+          {invite.kind === "duel"
+            ? "invited you to a live duel. Everyone races on the same word, and the first to solve it wins."
+            : "invited you to a friend board. Everyone plays the same word, then compares results on a shared scoreboard."}
         </p>
       ) : (
-        <p>
-          Start a friend board and send the link. Everyone plays the same hidden word at their own
-          pace, then compares results on a shared scoreboard.
-        </p>
+        <ul className="friendsIntro">
+          <li><strong>Live duel:</strong> race friends on the same word. First to solve it wins.</li>
+          <li><strong>Friend board:</strong> everyone plays the same word whenever they like, then compares results.</li>
+        </ul>
       )}
 
       {profile === undefined && !feedback && <p className="muted">Connecting…</p>}
@@ -93,13 +99,21 @@ function FriendsModal({ friends, hardMode, inBoard, onCopyInvite, onClose }) {
               type="button"
               className="playAgain"
               disabled={busy}
+              onClick={() => run(() => createDuel(hardMode))}
+            >
+              Start a live duel
+            </button>
+            <button
+              type="button"
+              className="secondaryButton"
+              disabled={busy}
               onClick={() => run(() => createBoard(hardMode))}
             >
               {inBoard ? "New friend board" : "Create a friend board"}
             </button>
           </div>
           <p className="muted small">
-            Hard mode is {hardMode ? "on" : "off"} for new boards (change it in Settings).
+            Hard mode is {hardMode ? "on" : "off"} for new games (change it in Settings).
           </p>
         </>
       )}
