@@ -2,7 +2,7 @@
 
 A browser word game built with React, made for playing with friends. Guess the hidden five-letter word in six tries. After each guess the tiles show how close you were. Play unlimited rounds, take on the daily puzzle, or send a friend a word to guess.
 
-Head-to-head multiplayer, against friends or random opponents, is in progress (see [`docs/MULTIPLAYER_PLAN.md`](docs/MULTIPLAYER_PLAN.md)).
+**Friend boards** are the first multiplayer feature: share a link, everyone plays the same hidden word, and you compare results on a scoreboard. Live duels and ranked play come next (see [`docs/MULTIPLAYER_PLAN.md`](docs/MULTIPLAYER_PLAN.md)).
 
 WeWordle is a personal project inspired by Wordle. It isn't affiliated with The New York Times, or with other games that use a similar name.
 
@@ -33,6 +33,28 @@ The top bar has **?** (rules), a bar chart (statistics) and a gear (settings).
 - Accessible: colors meet WCAG AA contrast, keys are real buttons with screen-reader labels, dialogs trap focus, and each scored guess is announced.
 - A How To Play dialog that opens on your first visit.
 
+## Online play (friend boards)
+
+Online play uses [Supabase](https://supabase.com). Without it configured, the app is solo-only and the Friends button is hidden.
+
+**Run it locally** (needs Docker running):
+
+```bash
+npm run db:start      # starts Postgres, Auth and the API in Docker; prints the local URL and keys
+cp .env.example .env.local
+```
+
+Put the local `API_URL` and `ANON_KEY` (from `npx supabase status`) into `.env.local`, then run `npm run dev`. Supabase Studio, a browser UI for the database, is at <http://127.0.0.1:54323>.
+
+| Command | What it does |
+|---|---|
+| `npm run db:start` / `db:stop` | Start or stop the local Supabase stack |
+| `npm run db:reset` | Rebuild the local database from `supabase/migrations` |
+| `npm run db:test` | Run the database tests in `supabase/tests` |
+| `npm run db:words` | Regenerate the word-list migration after editing `Word-Bank.txt` |
+
+**How it stays fair.** The answer never reaches the browser. Players can't read the tables directly. Guesses go to database functions that return only the colors, and the answer and other players' words are revealed only after you finish. See `supabase/migrations/` and the tests in `supabase/tests/`.
+
 ## Getting started
 
 Requires Node.js 18 or newer.
@@ -57,6 +79,8 @@ Then open <http://localhost:3000>.
 
 ```
 index.html              Page shell (Vite entry)
+supabase/               Local Supabase config, SQL migrations and database tests
+scripts/                generate-words-migration.mjs
 public/                 Icons, manifest, robots.txt
 src/
   main.jsx              Mounts <App />
@@ -68,6 +92,7 @@ src/
   stats.js              Statistics and streak calculations
   share.js              Share sheet / clipboard helper
   Words.js              Fetches Word-Bank.txt at runtime
+  online/               Supabase client, API wrappers, and useFriendBoard (joining, server-scored guesses, scoreboard)
   storage.js            Safe localStorage read/write
   brand.js              The app name (APP_NAME)
   Word-Bank.txt         5,757 five-letter words, most common first, one per line (LF)

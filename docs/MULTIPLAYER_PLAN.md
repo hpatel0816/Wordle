@@ -1,6 +1,6 @@
 # WeWordle multiplayer plan
 
-Status: draft, 2026-11-11. Backend: **Supabase** (Postgres, Auth, Realtime).
+Status: stage 2 (friend boards) built and running against local Supabase, 2026-11-11. Backend: **Supabase** (Postgres, Auth, Realtime).
 
 The solo game (Unlimited, Daily, challenge links) stays as it is. Multiplayer is added in three stages, and each stage can ship on its own.
 
@@ -92,7 +92,9 @@ Scoring in SQL duplicates `scoreGuess` from `src/gameLogic.js`. A shared set of 
 - Database tests for the functions and security rules, for example "a player can't read the answer" and "a guess after the match ended is rejected".
 - The frontend can stay a static site (Vercel, Netlify or GitHub Pages).
 
-## Needed from the team before stage 2
+## Needed from the team before going online
+
+Stage 2 runs locally today (see the README). To put it on the internet:
 
 1. Create a Supabase project (free tier) and turn on **anonymous sign-ins** under Authentication.
 2. Share the project URL and anon key for `.env.local`. Never share the `service_role` key, and never commit it.
