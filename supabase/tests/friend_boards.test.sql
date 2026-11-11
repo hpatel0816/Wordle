@@ -43,13 +43,14 @@ select lives_ok($$ select public.join_match('00000000-0000-0000-0000-0000000000f
 select throws_ok($$ select public.submit_guess('00000000-0000-0000-0000-0000000000f1', 'zzzzz') $$, 'P0001', 'Not in word list', 'invalid words are rejected');
 select is(
   public.submit_guess('00000000-0000-0000-0000-0000000000f1', 'ABOUT'),
-  '{"result":["almost","error","error","error","error"],"finished":false,"solved":false,"answer":null}'::jsonb,
+  '{"result":["almost","error","error","error","error"],"finished":false,"solved":false,"match_over":false,"answer":null}'::jsonb,
   'a guess returns only colors'
 );
 select is(public.get_match('00000000-0000-0000-0000-0000000000f1') -> 'answer', 'null'::jsonb, 'still no answer mid-round');
 select is(
-  (select jsonb_agg(p -> 'rows') from jsonb_array_elements(public.get_match('00000000-0000-0000-0000-0000000000f1') -> 'players') p),
-  '[null, null]'::jsonb,
+  (select jsonb_agg(p -> 'rows') from jsonb_array_elements(public.get_match('00000000-0000-0000-0000-0000000000f1') -> 'players') p
+   where not (p ->> 'is_me')::boolean),
+  '[null]'::jsonb,
   'other players'' guesses stay hidden mid-round'
 );
 select is(jsonb_array_length(public.get_match('00000000-0000-0000-0000-0000000000f1') -> 'my_rows'), 1, 'my own rows come back for resuming');
