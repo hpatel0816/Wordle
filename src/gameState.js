@@ -12,7 +12,8 @@ export const initialState = {
   evaluations: [], // scoreGuess() result for each submitted row
   attempt: 0, // index of the row being typed
   letterPos: 0, // index of the next tile in that row
-  message: null, // { text, id } for the latest user-facing message
+  message: null, // { text, id, shake } for the latest user-facing message
+  messageCount: 0,
 };
 
 function startGame(state, answer) {
@@ -28,9 +29,11 @@ function startGame(state, answer) {
   };
 }
 
-function withMessage(state, text) {
-  const id = (state.message?.id ?? 0) + 1;
-  return { ...state, message: { text, id } };
+// Each message gets a new id so repeating the same error still shows a
+// toast and replays the row shake. Kept in state so the reducer stays pure.
+function withMessage(state, text, { shake = false } = {}) {
+  const id = state.messageCount + 1;
+  return { ...state, messageCount: id, message: { text, id, shake } };
 }
 
 function setTile(board, row, col, value) {
@@ -69,10 +72,15 @@ export function gameReducer(state, action) {
     }
 
     case "SUBMIT": {
-      if (state.status !== "playing" || state.letterPos < WORD_LENGTH) return state;
+      if (state.status !== "playing") return state;
+      if (state.letterPos < WORD_LENGTH) {
+        return withMessage(state, "Not enough letters", { shake: true });
+      }
 
       const guess = state.board[state.attempt].join("").toLowerCase();
-      if (!state.wordSet.has(guess)) return withMessage(state, "Word Not Found");
+      if (!state.wordSet.has(guess)) {
+        return withMessage(state, "Not in word list", { shake: true });
+      }
 
       const attempt = state.attempt + 1;
       let status = "playing";
@@ -87,6 +95,11 @@ export function gameReducer(state, action) {
         status,
       };
     }
+
+    case "CLEAR_MESSAGE":
+      // Only clear the message the caller saw, not a newer one.
+      if (state.message?.id !== action.id) return state;
+      return { ...state, message: null };
 
     default:
       return state;

@@ -3,6 +3,7 @@ import { createContext, useEffect, useReducer } from "react";
 import Display from "./AppParts/Display";
 import Keyboard from "./AppParts/Keyboard";
 import GameOver from './AppParts/GameOver';
+import Toast from './AppParts/Toast';
 import { loadWordList } from './Words';
 import { pickAnswer } from './gameLogic';
 import { gameReducer, initialState } from './gameState';
@@ -39,10 +40,6 @@ function App() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  useEffect(() => {
-    if (state.message) alert(state.message.text);
-  }, [state.message]);
-
   const gameOver = state.status === "won" || state.status === "lost";
 
   return (
@@ -51,6 +48,7 @@ function App() {
         <h1>Wordle</h1>
       </nav>
       <AppContext.Provider value={{ state, dispatch }}>
+        <Toast />
         <div className="game">
           <Display />
           {gameOver ? <GameOver /> : <Keyboard />}

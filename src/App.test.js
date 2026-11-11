@@ -7,7 +7,6 @@ const WORDS = "crane\nabout\nother\nwhich\nthere\ntheir\nwould\n";
 
 beforeEach(() => {
   jest.spyOn(Math, "random").mockReturnValue(0);
-  jest.spyOn(window, "alert").mockImplementation(() => {});
   global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(WORDS) }));
 });
 
@@ -40,15 +39,32 @@ function rowLetters(rowIndex) {
 test("accepts a valid word from an LF word list and colors the row", async () => {
   await renderLoaded();
   guess("about");
-  expect(window.alert).not.toHaveBeenCalled();
+  expect(screen.queryByRole("status")).toBeEmptyDOMElement();
   expect(rowLetters(0).map((el) => el.id)).toEqual(["almost", "error", "error", "error", "error"]);
 });
 
 test("rejects a word that is not in the list without using up a row", async () => {
   await renderLoaded();
   guess("zzzzz");
-  expect(window.alert).toHaveBeenCalledWith("Word Not Found");
+  expect(screen.getByRole("status")).toHaveTextContent("Not in word list");
+  expect(document.querySelectorAll(".row")[0]).toHaveClass("shake");
   expect(rowLetters(0).every((el) => !el.id)).toBe(true);
+});
+
+test("pressing Enter on an incomplete row explains why", async () => {
+  await renderLoaded();
+  guess("abo");
+  expect(screen.getByRole("status")).toHaveTextContent("Not enough letters");
+});
+
+test("the toast disappears after a moment", async () => {
+  jest.useFakeTimers();
+  await renderLoaded();
+  guess("zzzzz");
+  expect(screen.getByRole("status")).toHaveTextContent("Not in word list");
+  act(() => jest.advanceTimersByTime(1600));
+  expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  jest.useRealTimers();
 });
 
 test("guessing the answer wins the game", async () => {

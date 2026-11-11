@@ -34,14 +34,16 @@ test("a row holds at most five letters and delete stops at the start", () => {
   expect(state.letterPos).toBe(0);
 });
 
-test("submitting an incomplete row does nothing", () => {
-  const state = type(loaded(), "abo");
-  expect(gameReducer(state, { type: "SUBMIT" })).toBe(state);
+test("submitting an incomplete row shows a message and keeps the row", () => {
+  const state = gameReducer(type(loaded(), "abo"), { type: "SUBMIT" });
+  expect(state.message).toMatchObject({ text: "Not enough letters", shake: true });
+  expect(state.attempt).toBe(0);
+  expect(state.letterPos).toBe(3);
 });
 
 test("an unknown word sets a message and keeps the row", () => {
   const state = guess(loaded(), "zzzzz");
-  expect(state.message.text).toBe("Word Not Found");
+  expect(state.message).toMatchObject({ text: "Not in word list", shake: true });
   expect(state.attempt).toBe(0);
   expect(state.letterPos).toBe(5);
 });
@@ -76,4 +78,16 @@ test("NEW_GAME resets the board with a new answer and keeps the word list", () =
   expect(next.evaluations).toEqual([]);
   expect(next.board.flat().every((l) => l === "")).toBe(true);
   expect(next.wordSet.has("crane")).toBe(true);
+});
+
+test("repeating an error gives a new message id", () => {
+  const first = guess(loaded(), "zzzzz");
+  const second = gameReducer(first, { type: "SUBMIT" });
+  expect(second.message.id).not.toBe(first.message.id);
+});
+
+test("CLEAR_MESSAGE only clears the matching message", () => {
+  const state = guess(loaded(), "zzzzz");
+  expect(gameReducer(state, { type: "CLEAR_MESSAGE", id: -1 })).toBe(state);
+  expect(gameReducer(state, { type: "CLEAR_MESSAGE", id: state.message.id }).message).toBeNull();
 });
