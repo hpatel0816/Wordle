@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../App';
-import { msUntilNextDay } from '../gameLogic';
+import { buildShareText, msUntilNextDay } from '../gameLogic';
+import { SHARE_MESSAGES, shareOrCopy } from '../share';
 
 function formatCountdown(ms) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -36,9 +37,14 @@ function NextDaily({ onReady }) {
 }
 
 function GameOver() {
-  const { state, startRound, openModal } = useContext(AppContext);
+  const { state, dispatch, startRound, openModal, display } = useContext(AppContext);
   const won = state.status === "won";
   const daily = state.mode === "daily";
+
+  const share = async () => {
+    const result = await shareOrCopy(buildShareText(state, display));
+    if (SHARE_MESSAGES[result]) dispatch({ type: "SHOW_MESSAGE", text: SHARE_MESSAGES[result] });
+  };
 
   return (
     <div className="gameOver" role="status">
@@ -54,6 +60,9 @@ function GameOver() {
         {/* autoFocus lets Enter start the next round */}
         <button type="button" className="playAgain" onClick={() => startRound("unlimited")} autoFocus>
           {daily ? "Play Unlimited" : "Play Again"}
+        </button>
+        <button type="button" className="secondaryButton" onClick={share}>
+          Share
         </button>
         <button type="button" className="secondaryButton" onClick={() => openModal("stats")}>
           Statistics

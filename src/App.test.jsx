@@ -332,3 +332,17 @@ describe("statistics", () => {
     expect(statValue("Max Streak")).toBe("1");
   });
 });
+
+test("Share copies the emoji grid to the clipboard", async () => {
+  const writeText = vi.fn(() => Promise.resolve());
+  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  await renderLoaded();
+  guess("about");
+  guess("crane");
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Share" }));
+  });
+  expect(writeText).toHaveBeenCalledWith("Wordle Unlimited 2/6\n\n🟨⬛⬛⬛⬛\n🟩🟩🟩🟩🟩");
+  expect(screen.getAllByRole("status")[0]).toHaveTextContent("Copied to clipboard");
+  delete navigator.clipboard;
+});

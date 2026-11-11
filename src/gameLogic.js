@@ -165,3 +165,30 @@ export function getDailyAnswer(answers, day) {
   const order = dailyOrder(answers);
   return order[((day % order.length) + order.length) % order.length];
 }
+
+// ----- Sharing -----
+
+// Emoji per tile status. The color-blind palette uses orange/blue, and the
+// light theme uses a white square for absent letters.
+export function shareEmoji({ highContrast = false, light = false } = {}) {
+  return {
+    correct: highContrast ? "🟧" : "🟩",
+    almost: highContrast ? "🟦" : "🟨",
+    error: light ? "⬜" : "⬛",
+  };
+}
+
+// Spoiler-free result, e.g.
+//   Wordle Daily #42 4/6*
+//
+//   ⬛🟨⬛⬛⬛
+//   ...
+// "*" marks hard mode and "X/6" a loss.
+export function buildShareText(state, display = {}) {
+  const { mode, day, status, attempt, evaluations, hardMode } = state;
+  const name = mode === "daily" ? `Daily #${day + 1}` : mode === "challenge" ? "Challenge" : "Unlimited";
+  const score = status === "won" ? attempt : "X";
+  const emoji = shareEmoji(display);
+  const grid = evaluations.map((row) => row.map((s) => emoji[s]).join("")).join("\n");
+  return `Wordle ${name} ${score}/${MAX_GUESSES}${hardMode ? "*" : ""}\n\n${grid}`;
+}

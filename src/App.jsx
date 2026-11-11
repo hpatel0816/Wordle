@@ -16,8 +16,8 @@ import { readPreference, writePreference } from './storage';
 import { roundFor, saveGame } from './savedGames';
 import ModeSwitch from './AppParts/ModeSwitch';
 
-// Provides { state, dispatch, startRound, openModal }; all game rules live
-// in gameReducer.
+// Provides { state, dispatch, startRound, openModal, display }; all game
+// rules live in gameReducer.
 export const AppContext = createContext(null);
 
 function App() {
@@ -185,7 +185,9 @@ function App() {
           </HeaderButton>
         </div>
       </header>
-      <AppContext.Provider value={{ state, dispatch, startRound, openModal: setModal }}>
+      <AppContext.Provider
+        value={{ state, dispatch, startRound, openModal: setModal, display: { highContrast, light: theme === "light" } }}
+      >
         <Toast />
         <main className="game">
           <ModeSwitch dailyNumber={getDayNumber() + 1} />

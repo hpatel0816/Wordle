@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import {
   ANSWER_POOL_SIZE,
+  buildShareText,
   getAnswerPool,
   getDailyAnswer,
   getDayNumber,
@@ -151,5 +152,31 @@ describe("daily puzzle", () => {
     const fifty = new Set(Array.from({ length: 50 }, (_, day) => getDailyAnswer(answers, day)));
     expect(fifty.size).toBe(50);
     expect(getDailyAnswer(answers, 50)).toBe(getDailyAnswer(answers, 0));
+  });
+});
+
+describe("buildShareText", () => {
+  const finished = {
+    mode: "daily",
+    day: 41,
+    status: "won",
+    attempt: 2,
+    hardMode: false,
+    evaluations: [scoreGuess("about", "crane"), scoreGuess("crane", "crane")],
+  };
+
+  test("shows the puzzle, score and an emoji grid without letters", () => {
+    expect(buildShareText(finished)).toBe("Wordle Daily #42 2/6\n\n🟨⬛⬛⬛⬛\n🟩🟩🟩🟩🟩");
+  });
+
+  test("marks hard mode and losses, and names the other modes", () => {
+    const lost = { ...finished, mode: "unlimited", status: "lost", attempt: 6, hardMode: true };
+    expect(buildShareText(lost).split("\n")[0]).toBe("Wordle Unlimited X/6*");
+    expect(buildShareText({ ...finished, mode: "challenge" }).split("\n")[0]).toBe("Wordle Challenge 2/6");
+  });
+
+  test("matches the color-blind palette and light theme", () => {
+    const text = buildShareText(finished, { highContrast: true, light: true });
+    expect(text.split("\n").slice(2)).toEqual(["🟦⬜⬜⬜⬜", "🟧🟧🟧🟧🟧"]);
   });
 });
