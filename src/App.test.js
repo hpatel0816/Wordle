@@ -7,6 +7,9 @@ import App from "./App";
 const WORDS = "crane\nabout\ncream\nnacre\ncaner\nrance\nancre\nacern\nrecan\n";
 
 beforeEach(() => {
+  localStorage.clear();
+  // Skip the first-visit help dialog unless a test opts in.
+  localStorage.setItem("seenHelp", "true");
   jest.spyOn(Math, "random").mockReturnValue(0);
   global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(WORDS) }));
 });
@@ -162,7 +165,6 @@ test("Enter on a focused button is left to the button", async () => {
 });
 
 test("high contrast toggle switches the theme and remembers the choice", async () => {
-  localStorage.clear();
   await renderLoaded();
   const toggle = screen.getByRole("button", { name: "High contrast colors" });
   expect(toggle).toHaveAttribute("aria-pressed", "false");
@@ -170,4 +172,32 @@ test("high contrast toggle switches the theme and remembers the choice", async (
   expect(toggle).toHaveAttribute("aria-pressed", "true");
   expect(document.querySelector(".App")).toHaveAttribute("data-theme", "high-contrast");
   expect(localStorage.getItem("highContrast")).toBe("true");
+});
+
+test("the help dialog opens on a first visit and is remembered once closed", async () => {
+  localStorage.removeItem("seenHelp");
+  await renderLoaded();
+  const dialog = screen.getByRole("dialog", { name: "How To Play" });
+  expect(dialog).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Close" })).toHaveFocus();
+
+  // Game input is ignored while it is open.
+  press("c");
+  expect(tileLetter(rowLetters(0)[0])).toBe("");
+
+  fireEvent.keyDown(dialog, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(localStorage.getItem("seenHelp")).toBe("true");
+
+  press("c");
+  expect(tileLetter(rowLetters(0)[0])).toBe("C");
+});
+
+test("the ? button reopens the help dialog", async () => {
+  await renderLoaded();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "How to play" }));
+  expect(screen.getByRole("dialog", { name: "How To Play" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });

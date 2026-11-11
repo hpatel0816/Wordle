@@ -1,9 +1,10 @@
 import './App.css';
-import { createContext, useEffect, useReducer, useState } from "react";
+import { createContext, useEffect, useReducer, useRef, useState } from "react";
 import Display from "./AppParts/Display";
 import Keyboard from "./AppParts/Keyboard";
 import GameOver from './AppParts/GameOver';
 import Toast from './AppParts/Toast';
+import HelpModal from './AppParts/HelpModal';
 import { loadWordList } from './Words';
 import { pickAnswer } from './gameLogic';
 import { gameReducer, initialState } from './gameState';
@@ -16,9 +17,19 @@ function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [highContrast, setHighContrast] = useState(() => readPreference("highContrast", false));
 
+  // Show the rules automatically on a player's first visit.
+  const [helpOpen, setHelpOpen] = useState(() => !readPreference("seenHelp", false));
+  const helpOpenRef = useRef(helpOpen);
+  helpOpenRef.current = helpOpen;
+
   useEffect(() => {
     writePreference("highContrast", highContrast);
   }, [highContrast]);
+
+  const closeHelp = () => {
+    setHelpOpen(false);
+    writePreference("seenHelp", true);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +45,8 @@ function App() {
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
+      // Typing goes nowhere while the help dialog is open.
+      if (helpOpenRef.current) return;
       if (event.key === "Enter") {
         // Let a focused button (e.g. Play Again, a key reached with Tab)
         // handle its own Enter press.
@@ -54,7 +67,18 @@ function App() {
   return (
     <div className="App" data-theme={highContrast ? "high-contrast" : undefined}>
       <header className="topBar">
-        <div />
+        <div className="topBarActions start">
+          <button
+            type="button"
+            className="iconButton"
+            aria-label="How to play"
+            title="How to play"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setHelpOpen(true)}
+          >
+            ?
+          </button>
+        </div>
         <h1>Wordle</h1>
         <div className="topBarActions">
           <button
@@ -78,6 +102,7 @@ function App() {
           {gameOver ? <GameOver /> : <Keyboard />}
         </main>
       </AppContext.Provider>
+      {helpOpen && <HelpModal onClose={closeHelp} />}
     </div>
   );
 }
