@@ -59,6 +59,20 @@ test("guessing the answer wins the game", async () => {
   expect(screen.getByText(/You Guessed In 2 Tries/)).toBeInTheDocument();
 });
 
+test("Play Again starts a fresh round", async () => {
+  await renderLoaded();
+  guess("crane");
+  fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
+
+  expect(screen.queryByText("You Correctly Guessed")).not.toBeInTheDocument();
+  expect(document.querySelectorAll(".letter[id]")).toHaveLength(0);
+  expect([...document.querySelectorAll(".letter")].every((el) => el.textContent === "")).toBe(true);
+
+  // The new round accepts input on the first row again.
+  guess("about");
+  expect(rowLetters(0).map((el) => el.textContent).join("")).toBe("ABOUT");
+});
+
 test("six wrong guesses lose, and an invalid word on the last row does not", async () => {
   await renderLoaded();
   ["about", "other", "which", "there", "their"].forEach(guess);
