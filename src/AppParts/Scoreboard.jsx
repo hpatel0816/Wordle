@@ -41,7 +41,12 @@ function Scoreboard({ board }) {
               {player.name}
               {player.is_me && <span className="muted"> (you)</span>}
             </span>
-            <span className="playerScore">{describe(player, duelOver)}</span>
+            <span className="playerScore">
+              {describe(player, duelOver)}
+              {player.rating_change != null && (
+                <span className="muted"> · {player.rating_change >= 0 ? "+" : "−"}{Math.abs(player.rating_change)}</span>
+              )}
+            </span>
             {player.rows && player.rows.length > 0 && <MiniGrid rows={player.rows} />}
           </li>
         ))}

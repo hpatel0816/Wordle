@@ -5,8 +5,8 @@ import { formatClock, useTicker } from './useTicker';
 // Shown instead of the keyboard before a duel starts: who's in, the invite
 // link, the host's Start button, then a short countdown.
 function DuelLobby() {
-  const { match, online, copyInvite } = useContext(AppContext);
-  const now = useTicker(online.serverNow);
+  const { match, online, clock, copyInvite } = useContext(AppContext);
+  const now = useTicker(clock);
   if (!match) return null;
 
   if (match.status === "active") {

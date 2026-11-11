@@ -186,10 +186,10 @@ export function shareEmoji({ highContrast = false, light = false } = {}) {
 //   ⬛🟨⬛⬛⬛
 //   ...
 // "*" marks hard mode and "X/6" a loss. A friend board adds its link.
-export function buildShareText(state, display = {}, link) {
+export function buildShareText(state, display = {}, link, label) {
   const { mode, day, status, attempt, evaluations, hardMode } = state;
   const names = { daily: `Daily #${day + 1}`, challenge: "Challenge", board: "Friend board" };
-  const name = names[mode] ?? "Unlimited";
+  const name = label ?? names[mode] ?? "Unlimited";
   const score = status === "won" ? attempt : "X";
   const emoji = shareEmoji(display);
   const grid = evaluations.map((row) => row.map((s) => emoji[s]).join("")).join("\n");

@@ -5,6 +5,8 @@ import { ONLINE_MODES } from "../gameState";
 const BOARD_REFRESH_MS = 15000;
 // Realtime pings drive duels; polling is a fallback if the socket drops.
 const DUEL_POLL_MS = 4000;
+// How often to ask the matchmaking queue for an opponent.
+const QUEUE_POLL_MS = 2000;
 
 function setMatchInUrl(id) {
   const url = new URL(window.location.href);
@@ -69,7 +71,7 @@ export function useOnlineGame({ state, dispatch, openModal, closeModal }) {
         const preview = await api.getBoard(id);
         if (!(await loadProfile())) {
           setInvite({ id, creator: preview.creator, kind: preview.kind });
-          openModal("friends");
+          openModal("online");
           return;
         }
         await api.joinBoard(id);
@@ -153,6 +155,57 @@ export function useOnlineGame({ state, dispatch, openModal, closeModal }) {
     }
   }, [state.boardId, refresh, showError]);
 
+  // ----- Ranked matchmaking -----
+  const [search, setSearch] = useState(null); // { since, error? } while looking
+  const searchToken = useRef(0); // bumps on every start/cancel so old polls stop
+  const searchTimer = useRef(null);
+
+  const findOpponent = useCallback(async () => {
+    const token = ++searchToken.current;
+    setSearch({ since: Date.now() });
+    const poll = async () => {
+      try {
+        const reply = await api.findMatch();
+        if (token !== searchToken.current) return;
+        if (reply.status === "matched") {
+          searchToken.current++;
+          setSearch(null);
+          closeModal();
+          await openMatch(reply.match_id);
+          return;
+        }
+        searchTimer.current = setTimeout(poll, QUEUE_POLL_MS);
+      } catch (error) {
+        if (token === searchToken.current) setSearch({ error: error.message });
+      }
+    };
+    await poll();
+  }, [closeModal, openMatch]);
+
+  const cancelSearch = useCallback(() => {
+    clearTimeout(searchTimer.current);
+    if (searchToken.current === 0) return;
+    searchToken.current++;
+    setSearch(null);
+    api.leaveQueue().catch(() => {});
+  }, []);
+
+  // Stop polling if the page goes away mid-search.
+  useEffect(() => () => clearTimeout(searchTimer.current), []);
+
+  // A rated match changes the player's rating: reload it once it's over.
+  const ratedId = match?.ranked && match.status === "finished" ? match.id : null;
+  useEffect(() => {
+    if (!ratedId) return;
+    api.getProfile().then(
+      (loaded) => {
+        profileRef.current = loaded ?? null;
+        setProfile(loaded ?? null);
+      },
+      () => {}
+    );
+  }, [ratedId]);
+
   const cancelInvite = useCallback(() => {
     if (invite) setMatchInUrl(null);
     setInvite(null);
@@ -229,6 +282,9 @@ export function useOnlineGame({ state, dispatch, openModal, closeModal }) {
     createDuel,
     startDuel,
     cancelInvite,
+    search,
+    findOpponent,
+    cancelSearch,
     serverNow,
   };
 }

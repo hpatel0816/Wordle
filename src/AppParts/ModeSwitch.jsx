@@ -28,12 +28,12 @@ function ModeSwitch({ dailyNumber }) {
       {onlineEnabled && (
         <button
           type="button"
-          aria-pressed={state.mode === "board" || state.mode === "duel"}
+          aria-pressed={["board", "duel", "bot"].includes(state.mode)}
           aria-haspopup="dialog"
           onMouseDown={(event) => event.preventDefault()}
-          onClick={() => openModal("friends")}
+          onClick={() => openModal("online")}
         >
-          Friends
+          Online
         </button>
       )}
       {state.mode === "challenge" && (

@@ -6,8 +6,9 @@ import { readPreference, writePreference } from "./storage";
 const key = (mode) => `game:${mode}`;
 
 export function saveGame(state) {
-  // Challenges come from the URL and friend boards live on the server.
-  if (state.status === "loading" || state.mode === "challenge" || state.mode === "board") return;
+  // Only solo rounds are saved: challenges come from the URL, online games
+  // live on the server, and practice duels are short.
+  if (state.status === "loading" || !["daily", "unlimited"].includes(state.mode)) return;
   writePreference(key(state.mode), {
     answer: state.answer,
     day: state.day,

@@ -16,11 +16,12 @@ import { canChangeHardMode, gameReducer, initialState } from './gameState';
 import { readPreference, writePreference } from './storage';
 import { roundFor, saveGame } from './savedGames';
 import ModeSwitch from './AppParts/ModeSwitch';
-import FriendsModal from './AppParts/FriendsModal';
+import OnlineModal from './AppParts/OnlineModal';
+import { useBotGame } from './useBotGame';
 import { useOnlineGame } from './online/useOnlineGame';
 import DuelLobby from './AppParts/DuelLobby';
 import DuelBar from './AppParts/DuelBar';
-import { boardUrl } from './online/api';
+import { api, boardUrl, onlineEnabled } from './online/api';
 import { SHARE_MESSAGES, shareOrCopy } from './share';
 import { APP_NAME } from './brand';
 
@@ -34,7 +35,7 @@ function App() {
   const [highContrast, setHighContrast] = useState(() => readPreference("highContrast", false));
 
   // Which dialog is open: "help" | "settings" | "stats" | "challenge" |
-  // "friends" | null. The rules open automatically on a player's first visit.
+  // "online" | null. The rules open automatically on a player's first visit.
   const [modal, setModal] = useState(() => (readPreference("seenHelp", false) ? null : "help"));
   const modalRef = useRef(modal);
   modalRef.current = modal;
@@ -113,6 +114,15 @@ function App() {
   }, []);
 
   const online = useOnlineGame({ state, dispatch, openModal: setModal, closeModal });
+  const bot = useBotGame({ state, dispatch, playerName: online.profile?.display_name ?? "You" });
+
+  // A practice duel against the computer.
+  const playBot = () => {
+    online.cancelSearch();
+    closeModal();
+    bot.start(hardModePref);
+  };
+  const isDuel = state.mode === "duel" || state.mode === "bot";
 
   const copyInvite = async () => {
     const what = state.mode === "duel" ? "Join my live duel on" : "Play my friend board on";
@@ -172,7 +182,7 @@ function App() {
   const gameOver = state.status === "won" || state.status === "lost";
 
   // An online game's hard mode is set by whoever created it.
-  const boardRules = ["board", "duel"].includes(state.mode) && ["playing", "waiting"].includes(state.status);
+  const boardRules = ["board", "duel", "bot"].includes(state.mode) && ["playing", "waiting"].includes(state.status);
   const hardModeLocked = boardRules || !canChangeHardMode(state);
   const settings = [
     {
@@ -208,9 +218,11 @@ function App() {
     startRound,
     openModal: setModal,
     display: { highContrast, light: theme === "light" },
-    match: online.match,
+    match: state.mode === "bot" ? bot.match : online.match,
+    clock: state.mode === "bot" ? Date.now : online.serverNow,
     online,
     copyInvite,
+    playBot,
   };
 
   return (
@@ -235,9 +247,9 @@ function App() {
       </header>
       <AppContext.Provider value={context}>
         <Toast />
-        <main className={state.mode === "duel" && state.status === "playing" ? "game duel" : "game"}>
+        <main className={isDuel && state.status === "playing" ? "game duel" : "game"}>
           <ModeSwitch dailyNumber={getDayNumber() + 1} />
-          {state.mode === "duel" && state.status === "playing" && <DuelBar />}
+          {isDuel && state.status === "playing" && <DuelBar />}
           <Display />
           {gameOver ? <GameOver /> : state.status === "waiting" ? <DuelLobby /> : <Keyboard />}
         </main>
@@ -249,14 +261,16 @@ function App() {
             </button>
           </SettingsModal>
         )}
-        {modal === "friends" && (
-          <FriendsModal
-            friends={online}
+        {modal === "online" && (
+          <OnlineModal
+            online={online}
             hardMode={hardModePref}
-            inBoard={["board", "duel"].includes(state.mode)}
+            inGame={state.mode === "board" || (state.mode === "duel" && !online.match?.ranked)}
             onCopyInvite={copyInvite}
+            onPlayBot={playBot}
             onClose={() => {
               online.cancelInvite();
+              online.cancelSearch();
               closeModal();
             }}
           />
@@ -275,6 +289,7 @@ function App() {
             stats={stats}
             initialMode={state.mode === "daily" ? "daily" : "unlimited"}
             today={getDayNumber()}
+            loadLeaderboard={onlineEnabled ? api.getLeaderboard : null}
             highlight={
               state.status === "won" && STATS_MODES.includes(state.mode)
                 ? { mode: state.mode, attempts: state.attempt }

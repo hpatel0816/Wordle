@@ -38,6 +38,9 @@ export const api = {
   getBoard: (id) => call("get_match", { p_match: id }),
   createDuel: (hardMode) => call("create_duel", { p_hard_mode: hardMode }),
   startDuel: (id) => call("start_duel", { p_match: id }),
+  findMatch: () => call("find_match"),
+  leaveQueue: () => call("leave_queue"),
+  getLeaderboard: () => call("get_leaderboard"),
 
   // Calls onChange whenever the server pings this match (someone joined,
   // guessed, or the duel started or ended). Returns an unsubscribe function.

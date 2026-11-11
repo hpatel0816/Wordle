@@ -6,8 +6,8 @@ import { MAX_GUESSES } from '../gameLogic';
 
 // During a duel: time left and each opponent's colors, live.
 function DuelBar() {
-  const { match, online } = useContext(AppContext);
-  const now = useTicker(online.serverNow, 500);
+  const { match, clock } = useContext(AppContext);
+  const now = useTicker(clock, 500);
   if (!match || match.status !== "active") return null;
 
   const opponents = match.players.filter((p) => !p.is_me);

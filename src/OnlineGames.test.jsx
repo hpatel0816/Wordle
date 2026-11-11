@@ -17,6 +17,9 @@ vi.mock("./online/api", () => ({
     createDuel: vi.fn(),
     startDuel: vi.fn(),
     subscribe: vi.fn(() => () => {}),
+    findMatch: vi.fn(),
+    leaveQueue: vi.fn(),
+    getLeaderboard: vi.fn(),
   },
 }));
 
@@ -46,6 +49,7 @@ beforeEach(() => {
   api.joinBoard.mockResolvedValue(null);
   api.getBoard.mockResolvedValue(boardData());
   api.subscribe.mockImplementation(() => () => {});
+  api.leaveQueue.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -91,7 +95,7 @@ test("a board link asks a new player for a name, then joins and plays", async ()
   expect(api.setDisplayName).toHaveBeenCalledWith("Jo");
   expect(api.joinBoard).toHaveBeenCalledWith("b1");
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Friends" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "Online" })).toHaveAttribute("aria-pressed", "true");
 
   api.submitGuess.mockResolvedValue({ result: ["almost", "error", "error", "error", "error"], finished: false, answer: null });
   await guess("about");
@@ -136,22 +140,22 @@ test("a guess the server rejects unlocks the row and explains why", async () => 
   expect(rowStates(0)).toEqual(["", "", "", "", ""]);
 });
 
-test("the Friends dialog creates a board and opens it", async () => {
+test("the Online dialog creates a board and opens it", async () => {
   api.createBoard.mockResolvedValue("b2");
   api.getBoard.mockResolvedValue(boardData({ id: "b2", creator: "Jo" }));
   render(<App />);
   await settle();
 
-  fireEvent.click(screen.getByRole("button", { name: "Friends" }));
+  fireEvent.click(screen.getByRole("button", { name: "Online" }));
   await settle();
-  const dialog = screen.getByRole("dialog", { name: "Play with Friends" });
+  const dialog = screen.getByRole("dialog", { name: "Play Online" });
   expect(dialog).toHaveTextContent("Playing as Jo");
   fireEvent.click(within(dialog).getByRole("button", { name: "Create a friend board" }));
   await settle();
 
   expect(api.createBoard).toHaveBeenCalledWith(false);
   expect(window.location.search).toBe("?board=b2");
-  expect(screen.getByRole("button", { name: "Friends" })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: "Online" })).toHaveAttribute("aria-pressed", "true");
 });
 
 test("Play Unlimited leaves the board and clears the link", async () => {
@@ -273,5 +277,114 @@ describe("live duels", () => {
     // Typing does nothing once the duel is over.
     press("c");
     expect(document.querySelectorAll(".row")[1].children[0]).toHaveTextContent("");
+  });
+});
+
+describe("ranked play", () => {
+  test("finding an opponent waits in the queue, then opens the ranked match", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
+    api.getProfile.mockResolvedValue({ display_name: "Jo", rating: 1000, ranked_played: 0, ranked_wins: 0 });
+    api.findMatch.mockResolvedValueOnce({ status: "waiting", waited: 0 }).mockResolvedValueOnce({ status: "matched", match_id: "r1" });
+    api.getBoard.mockResolvedValue(
+      boardData({
+        id: "r1", kind: "duel", ranked: true, status: "active", is_host: false,
+        server_now: new Date().toISOString(), starts_at: new Date().toISOString(),
+        ends_at: new Date(Date.now() + 180000).toISOString(),
+        players: [
+          { name: "Jo", is_me: true, finished: false, solved: false, guesses_used: 0, rows: [], rating: 1000 },
+          { name: "Max", is_me: false, finished: false, solved: false, guesses_used: 0, rows: [], rating: 1010 },
+        ],
+      })
+    );
+    render(<App />);
+    await settle();
+
+    fireEvent.click(screen.getByRole("button", { name: "Online" }));
+    await settle();
+    expect(screen.getByRole("dialog", { name: "Play Online" })).toHaveTextContent("rating 1000");
+    fireEvent.click(screen.getByRole("button", { name: "Find an opponent" }));
+    await settle();
+    expect(screen.getByText(/Finding an opponent/)).toBeInTheDocument();
+
+    await act(async () => vi.advanceTimersByTime(2000));
+    await settle();
+    expect(api.findMatch).toHaveBeenCalledTimes(2);
+    expect(api.joinBoard).toHaveBeenCalledWith("r1");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("list", { name: "Opponents" })).getByText("Max")).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  test("cancelling the search leaves the queue", async () => {
+    api.findMatch.mockResolvedValue({ status: "waiting", waited: 0 });
+    render(<App />);
+    await settle();
+    fireEvent.click(screen.getByRole("button", { name: "Online" }));
+    await settle();
+    fireEvent.click(screen.getByRole("button", { name: "Find an opponent" }));
+    await settle();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(api.leaveQueue).toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Find an opponent" })).toBeInTheDocument();
+  });
+
+  test("the result screen shows the rating change", async () => {
+    window.history.replaceState(null, "", "/?board=r1");
+    api.getBoard.mockResolvedValue(
+      boardData({
+        id: "r1", kind: "duel", ranked: true, status: "finished", winner: "Jo", answer: "crane",
+        server_now: new Date().toISOString(), starts_at: new Date().toISOString(), ends_at: new Date().toISOString(),
+        my_rows: [{ word: "crane", result: ALL_CORRECT }],
+        players: [
+          { name: "Jo", is_me: true, is_winner: true, finished: true, solved: true, guesses_used: 1, seconds: 20, rows: [], rating: 1016, rating_change: 16 },
+          { name: "Max", is_me: false, finished: false, solved: false, guesses_used: 2, rows: [], rating: 994, rating_change: -16 },
+        ],
+      })
+    );
+    render(<App />);
+    await settle();
+    expect(screen.getByText("You won the duel!")).toBeInTheDocument();
+    expect(screen.getByText("Rating 1016 (+16)")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Find another match" })).toBeInTheDocument();
+  });
+
+  test("Statistics has a Ranked tab with the leaderboard", async () => {
+    api.getLeaderboard.mockResolvedValue({
+      me: { rating: 1016, played: 1, wins: 1, rank: 1 },
+      top: [{ rank: 1, name: "Jo", rating: 1016, played: 1, wins: 1, is_me: true }],
+    });
+    render(<App />);
+    await settle();
+    fireEvent.click(screen.getAllByRole("button", { name: "Statistics" })[0]);
+    const dialog = screen.getByRole("dialog", { name: "Statistics" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Ranked" }));
+    await settle();
+    expect(within(dialog).getByText("#1", { selector: "dd" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("list")).toHaveTextContent("Jo");
+  });
+});
+
+describe("practice against the computer", () => {
+  test("WeBot races you after a countdown, and you can beat it", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date"] });
+    render(<App />);
+    await settle();
+    fireEvent.click(screen.getByRole("button", { name: "Online" }));
+    await settle();
+    fireEvent.click(screen.getByRole("button", { name: "Practice against the computer" }));
+    expect(screen.getByRole("button", { name: "Online" })).toHaveAttribute("aria-pressed", "true");
+
+    // Countdown: input is ignored until it ends.
+    press("c");
+    expect(document.querySelector(".row").children[0]).toHaveTextContent("");
+    await act(async () => vi.advanceTimersByTime(3100));
+    expect(within(screen.getByRole("list", { name: "Opponents" })).getByText("WeBot")).toBeInTheDocument();
+
+    // Math.random is mocked to 0, so the answer is the first word: CRANE.
+    await guess("crane");
+    expect(screen.getByText("You won the duel!")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Rematch" })).toBeInTheDocument();
+    expect(localStorage.getItem("stats:unlimited")).toBeNull();
+    vi.useRealTimers();
   });
 });
