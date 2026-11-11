@@ -5,7 +5,7 @@ import { gameReducer, initialState } from "./gameState";
 const WORDS = ["crane", "about", "nacre", "caner", "rance", "ancre", "acern", "recan"];
 
 function loaded(answer = "crane") {
-  return gameReducer(initialState, { type: "LOADED", words: WORDS, answer });
+  return gameReducer(initialState, { type: "LOADED", words: WORDS, answers: WORDS, answer });
 }
 
 function type(state, word) {
@@ -71,7 +71,7 @@ test("six wrong guesses lose", () => {
   expect(state.status).toBe("lost");
 });
 
-test("NEW_GAME resets the board with a new answer and keeps the word list", () => {
+test("NEW_GAME resets the board with a new answer and keeps the word lists", () => {
   const finished = guess(loaded(), "crane");
   const next = gameReducer(finished, { type: "NEW_GAME", answer: "about" });
   expect(next.status).toBe("playing");
@@ -80,6 +80,7 @@ test("NEW_GAME resets the board with a new answer and keeps the word list", () =
   expect(next.evaluations).toEqual([]);
   expect(next.board.flat().every((l) => l === "")).toBe(true);
   expect(next.wordSet.has("crane")).toBe(true);
+  expect(next.answers).toEqual(WORDS);
 });
 
 test("repeating an error gives a new message id", () => {

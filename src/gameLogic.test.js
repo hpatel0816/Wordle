@@ -1,4 +1,32 @@
-import { getKeyStatuses, parseWordList, pickAnswer, scoreGuess } from "./gameLogic";
+import fs from "fs";
+import path from "path";
+import {
+  ANSWER_POOL_SIZE,
+  getAnswerPool,
+  getKeyStatuses,
+  parseWordList,
+  pickAnswer,
+  scoreGuess,
+} from "./gameLogic";
+
+describe("getAnswerPool", () => {
+  const allWords = parseWordList(fs.readFileSync(path.join(__dirname, "Word-Bank.txt"), "utf8"));
+  const pool = getAnswerPool(allWords);
+
+  test("uses only the most common words", () => {
+    expect(allWords.length).toBeGreaterThan(5000);
+    expect(pool.length).toBeLessThanOrEqual(ANSWER_POOL_SIZE);
+    expect(pool.length).toBeGreaterThan(ANSWER_POOL_SIZE - 10);
+    expect(pool).toContain("about");
+    expect(pool).not.toContain(allWords[allWords.length - 1]);
+  });
+
+  test("leaves out excluded words but keeps them as valid guesses", () => {
+    expect(pool).not.toContain("slave");
+    expect(pool).not.toContain("queer");
+    expect(allWords).toContain("slave");
+  });
+});
 
 describe("getKeyStatuses", () => {
   test("keeps the best status seen for each letter", () => {

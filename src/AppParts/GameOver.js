@@ -7,7 +7,7 @@ function GameOver() {
   const won = state.status === "won";
 
   const playAgain = () => {
-    dispatch({ type: "NEW_GAME", answer: pickAnswer(state.words) });
+    dispatch({ type: "NEW_GAME", answer: pickAnswer(state.answers) });
   };
 
   return (

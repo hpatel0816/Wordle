@@ -5,8 +5,8 @@ export const emptyBoard = () =>
 
 export const initialState = {
   status: "loading", // "loading" | "playing" | "won" | "lost"
-  words: [],
-  wordSet: new Set(),
+  answers: [], // words that can be picked as the answer
+  wordSet: new Set(), // every valid guess
   answer: "",
   board: emptyBoard(), // uppercase letters, "" for empty tiles
   evaluations: [], // scoreGuess() result for each submitted row
@@ -46,7 +46,7 @@ export function gameReducer(state, action) {
   switch (action.type) {
     case "LOADED":
       return startGame(
-        { ...state, words: action.words, wordSet: new Set(action.words) },
+        { ...state, answers: action.answers, wordSet: new Set(action.words) },
         action.answer
       );
 

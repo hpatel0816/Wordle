@@ -62,6 +62,21 @@ export function getKeyStatuses(board, evaluations) {
   return statuses;
 }
 
+// Word-Bank.txt is ordered from most to least common, so the answer pool
+// is its first ANSWER_POOL_SIZE words. Every word stays a valid guess.
+export const ANSWER_POOL_SIZE = 1500;
+
+// Words that are valid guesses but shouldn't be picked as the answer.
+export const ANSWER_EXCLUSIONS = new Set([
+  "queer", "slave", "bitch", "whore", "sluts", "dicks", "cunts", "pussy",
+  "penis", "porno", "horny", "boobs", "titty", "dildo", "kikes", "spics",
+  "gooks", "fagot", "dykes", "homos", "rapes", "raped", "semen", "sexed",
+]);
+
+export function getAnswerPool(words) {
+  return words.slice(0, ANSWER_POOL_SIZE).filter((word) => !ANSWER_EXCLUSIONS.has(word));
+}
+
 export function pickAnswer(words, random = Math.random) {
   return words[Math.floor(random() * words.length)];
 }

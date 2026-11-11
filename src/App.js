@@ -6,7 +6,7 @@ import GameOver from './AppParts/GameOver';
 import Toast from './AppParts/Toast';
 import HelpModal from './AppParts/HelpModal';
 import { loadWordList } from './Words';
-import { pickAnswer } from './gameLogic';
+import { getAnswerPool, pickAnswer } from './gameLogic';
 import { gameReducer, initialState } from './gameState';
 import { readPreference, writePreference } from './storage';
 
@@ -34,7 +34,9 @@ function App() {
   useEffect(() => {
     let cancelled = false;
     loadWordList().then((words) => {
-      if (!cancelled) dispatch({ type: "LOADED", words, answer: pickAnswer(words) });
+      if (cancelled) return;
+      const answers = getAnswerPool(words);
+      dispatch({ type: "LOADED", words, answers, answer: pickAnswer(answers) });
     });
     return () => {
       cancelled = true;
