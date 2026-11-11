@@ -161,7 +161,7 @@ button:focus-visible {
 
 /* Board: square tiles that shrink to fit narrow or short screens. */
 .display {
-  width: min(330px, 100%, calc((100dvh - 330px) * 5 / 6));
+  width: min(330px, 100%, calc((100dvh - 380px) * 5 / 6));
   min-width: 220px;
   display: grid;
   grid-template-rows: repeat(6, 1fr);
@@ -462,4 +462,63 @@ button:focus-visible {
 
 .switch[aria-checked="true"] .switchKnob {
   transform: translateX(18px);
+}
+
+/* Unlimited / Daily mode picker above the board. */
+.modeSwitch {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-divider);
+}
+
+.modeSwitch button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.modeSwitch button:hover {
+  background-color: var(--color-hover);
+}
+
+.modeSwitch button[aria-pressed="true"] {
+  background-color: var(--color-correct);
+  color: var(--color-correct-text);
+  cursor: default;
+}
+
+.nextDaily {
+  margin: 8px 0;
+  font-size: 15px;
+}
+
+.nextDaily time {
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.secondaryButton {
+  margin: 8px 4px 0;
+  padding: 10px 20px;
+  border: 2px solid var(--color-tile-border-filled);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: bold;
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+.secondaryButton:hover {
+  background-color: var(--color-hover);
 }

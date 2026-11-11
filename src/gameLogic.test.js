@@ -3,8 +3,11 @@ import path from "path";
 import {
   ANSWER_POOL_SIZE,
   getAnswerPool,
+  getDailyAnswer,
+  getDayNumber,
   getHardModeError,
   getKeyStatuses,
+  msUntilNextDay,
   parseWordList,
   pickAnswer,
   scoreGuess,
@@ -127,5 +130,26 @@ describe("getHardModeError", () => {
 
   test("anything goes before the first guess", () => {
     expect(getHardModeError("zzzzz", [], [])).toBeNull();
+  });
+});
+
+describe("daily puzzle", () => {
+  test("day numbers follow the local calendar", () => {
+    expect(getDayNumber(new Date(2025, 0, 1, 0, 0))).toBe(0);
+    expect(getDayNumber(new Date(2025, 0, 1, 23, 59))).toBe(0);
+    expect(getDayNumber(new Date(2025, 0, 2, 0, 1))).toBe(1);
+    expect(getDayNumber(new Date(2026, 0, 1, 12))).toBe(365);
+  });
+
+  test("time until the next puzzle counts down to local midnight", () => {
+    expect(msUntilNextDay(new Date(2025, 5, 10, 23, 0, 0))).toBe(60 * 60 * 1000);
+  });
+
+  test("everyone gets the same answer for a day and words don't repeat for a long time", () => {
+    const answers = Array.from({ length: 50 }, (_, i) => `w${i}`);
+    expect(getDailyAnswer(answers, 3)).toBe(getDailyAnswer([...answers], 3));
+    const fifty = new Set(Array.from({ length: 50 }, (_, day) => getDailyAnswer(answers, day)));
+    expect(fifty.size).toBe(50);
+    expect(getDailyAnswer(answers, 50)).toBe(getDailyAnswer(answers, 0));
   });
 });

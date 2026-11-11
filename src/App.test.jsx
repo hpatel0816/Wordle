@@ -1,5 +1,6 @@
 import { render, screen, act, fireEvent } from "@testing-library/react";
 import App from "./App";
+import { getAnswerPool, getDailyAnswer, getDayNumber, parseWordList } from "./gameLogic";
 
 // LF-only, like the committed Word-Bank.txt. With Math.random mocked to 0,
 // the answer is always the first word. The NACRE-style entries reuse only
@@ -244,4 +245,53 @@ test("the ? button reopens the help dialog", async () => {
   expect(screen.getByRole("dialog", { name: "How To Play" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Close" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+
+describe("daily mode", () => {
+  const dailyAnswer = () => getDailyAnswer(getAnswerPool(parseWordList(WORDS)), getDayNumber());
+
+  test("plays today's puzzle and keeps the result after a reload", async () => {
+    const { unmount } = render(<App />);
+    await act(async () => {});
+    fireEvent.click(screen.getByRole("button", { name: /^Daily #\d+$/ }));
+    expect(screen.getByRole("button", { name: /^Daily/ })).toHaveAttribute("aria-pressed", "true");
+
+    guess(dailyAnswer());
+    expect(screen.getByText("You Correctly Guessed")).toBeInTheDocument();
+    expect(screen.getByRole("timer")).toHaveTextContent(/^\d\d:\d\d:\d\d$/);
+    expect(screen.getByRole("button", { name: "Play Unlimited" })).toBeInTheDocument();
+    unmount();
+
+    // A reload comes back to the finished daily, which can't be replayed.
+    await renderLoaded();
+    expect(screen.getByRole("button", { name: /^Daily/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("You Correctly Guessed")).toBeInTheDocument();
+    expect(rowLetters(0).map(tileLetter).join("")).toBe(dailyAnswer().toUpperCase());
+
+    fireEvent.click(screen.getByRole("button", { name: "Play Unlimited" }));
+    expect(screen.getByRole("button", { name: "Unlimited" })).toHaveAttribute("aria-pressed", "true");
+    expect(rowLetters(0).map(tileLetter).join("")).toBe("");
+  });
+
+  test("switching modes keeps each mode's round in progress", async () => {
+    await renderLoaded();
+    guess("about");
+    fireEvent.click(screen.getByRole("button", { name: /^Daily/ }));
+    expect(rowLetters(0).map(tileLetter).join("")).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "Unlimited" }));
+    expect(rowLetters(0).map(tileLetter).join("")).toBe("ABOUT");
+  });
+});
+
+test("an unfinished round resumes after a reload", async () => {
+  const { unmount } = render(<App />);
+  await act(async () => {});
+  guess("about");
+  unmount();
+
+  await renderLoaded();
+  expect(rowLetters(0).map(tileLetter).join("")).toBe("ABOUT");
+  expect(rowLetters(0).map(tileState)).toEqual(["almost", "error", "error", "error", "error"]);
+  guess("crane");
+  expect(screen.getByText(/You Guessed In 2 Tries/)).toBeInTheDocument();
 });

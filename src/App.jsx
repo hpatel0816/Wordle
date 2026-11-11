@@ -1,5 +1,5 @@
 import './App.css';
-import { createContext, useEffect, useReducer, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import Display from "./AppParts/Display";
 import Keyboard from "./AppParts/Keyboard";
 import GameOver from './AppParts/GameOver';
@@ -8,18 +8,17 @@ import HelpModal from './AppParts/HelpModal';
 import SettingsModal from './AppParts/SettingsModal';
 import { SettingsIcon } from './AppParts/Icons';
 import { loadWordList } from './Words';
-import { getAnswerPool, pickAnswer } from './gameLogic';
+import { getAnswerPool, getDayNumber } from './gameLogic';
 import { canChangeHardMode, gameReducer, initialState } from './gameState';
 import { readPreference, writePreference } from './storage';
+import { roundFor, saveGame } from './savedGames';
+import ModeSwitch from './AppParts/ModeSwitch';
 
-// Provides { state, dispatch }; all game rules live in gameReducer.
+// Provides { state, dispatch, startRound }; all game rules live in gameReducer.
 export const AppContext = createContext(null);
 
 function App() {
-  const [state, dispatch] = useReducer(gameReducer, initialState, (s) => ({
-    ...s,
-    hardMode: readPreference("hardMode", false),
-  }));
+  const [state, dispatch] = useReducer(gameReducer, initialState);
   const [theme, setTheme] = useState(() => readPreference("theme", systemTheme()));
   const [highContrast, setHighContrast] = useState(() => readPreference("highContrast", false));
 
@@ -42,9 +41,39 @@ function App() {
     writePreference("highContrast", highContrast);
   }, [theme, highContrast]);
 
+  // The hard mode setting for new rounds. The current round keeps the
+  // setting it started with (state.hardMode).
+  const [hardModePref, setHardModePref] = useState(() => readPreference("hardMode", false));
+  const hardModeRef = useRef(hardModePref);
+  hardModeRef.current = hardModePref;
+  const answersRef = useRef(state.answers);
+  answersRef.current = state.answers;
+
+  // Start (or resume) a round in "daily" or "unlimited" mode.
+  const startRound = useCallback((mode) => {
+    writePreference("mode", mode);
+    dispatch({ type: "START", ...roundFor(mode, answersRef.current, hardModeRef.current) });
+  }, []);
+
+  // Settings only calls this while the switch is unlocked.
+  const setHardMode = (on) => {
+    setHardModePref(on);
+    writePreference("hardMode", on);
+    dispatch({ type: "SET_HARD_MODE", on });
+  };
+
+  // Save progress after every change so a reload resumes the round.
   useEffect(() => {
-    writePreference("hardMode", state.hardMode);
-  }, [state.hardMode]);
+    saveGame({
+      status: state.status,
+      mode: state.mode,
+      answer: state.answer,
+      day: state.day,
+      hardMode: state.hardMode,
+      board: state.board,
+      attempt: state.attempt,
+    });
+  }, [state.status, state.mode, state.answer, state.day, state.hardMode, state.board, state.attempt]);
 
   const closeModal = () => {
     if (modal === "help") writePreference("seenHelp", true);
@@ -56,7 +85,9 @@ function App() {
     loadWordList().then((words) => {
       if (cancelled) return;
       const answers = getAnswerPool(words);
-      dispatch({ type: "LOADED", words, answers, answer: pickAnswer(answers) });
+      const mode = readPreference("mode", "unlimited") === "daily" ? "daily" : "unlimited";
+      const round = roundFor(mode, answers, readPreference("hardMode", false));
+      dispatch({ type: "LOADED", words, answers, ...round });
     });
     return () => {
       cancelled = true;
@@ -94,9 +125,9 @@ function App() {
       description: hardModeLocked
         ? "Can only be changed at the start of a round"
         : "Any revealed hints must be used in later guesses",
-      checked: state.hardMode,
+      checked: state.status === "playing" ? state.hardMode : hardModePref,
       disabled: hardModeLocked,
-      onChange: (on) => dispatch({ type: "SET_HARD_MODE", on }),
+      onChange: setHardMode,
     },
     {
       id: "light-theme",
@@ -128,9 +159,10 @@ function App() {
           </HeaderButton>
         </div>
       </header>
-      <AppContext.Provider value={{ state, dispatch }}>
+      <AppContext.Provider value={{ state, dispatch, startRound }}>
         <Toast />
         <main className="game">
+          <ModeSwitch dailyNumber={getDayNumber() + 1} />
           <Display />
           {gameOver ? <GameOver /> : <Keyboard />}
         </main>

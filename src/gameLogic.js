@@ -113,3 +113,55 @@ export function getHardModeError(guess, board, evaluations) {
   }
   return null;
 }
+
+// ----- Daily puzzle -----
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Daily #1 was this date. Days follow the player's local calendar.
+const DAILY_EPOCH = Date.UTC(2025, 0, 1);
+
+// 0 on the epoch date, 1 the next day, and so on.
+export function getDayNumber(date = new Date()) {
+  const localMidnight = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.round((localMidnight - DAILY_EPOCH) / DAY_MS);
+}
+
+export function msUntilNextDay(now = new Date()) {
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return next - now;
+}
+
+// Small seeded PRNG (mulberry32) so everyone gets the same order.
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const dailyOrders = new WeakMap();
+
+// The answer pool shuffled once with a fixed seed, so consecutive days
+// aren't neighbours in the frequency list and no word repeats until the
+// whole pool has been used.
+function dailyOrder(answers) {
+  if (!dailyOrders.has(answers)) {
+    const order = [...answers];
+    const random = seededRandom(20250101);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    dailyOrders.set(answers, order);
+  }
+  return dailyOrders.get(answers);
+}
+
+export function getDailyAnswer(answers, day) {
+  const order = dailyOrder(answers);
+  return order[((day % order.length) + order.length) % order.length];
+}

@@ -123,12 +123,40 @@ describe("hard mode", () => {
     expect(state.hardMode).toBe(false);
     expect(state.message.text).toBe("Hard mode can only be changed at the start of a round");
 
+    // A finished round keeps the setting it was played with.
     const over = guess(midRound, "crane");
-    expect(gameReducer(over, { type: "SET_HARD_MODE", on: true }).hardMode).toBe(true);
+    expect(gameReducer(over, { type: "SET_HARD_MODE", on: true }).hardMode).toBe(false);
+    expect(gameReducer(over, { type: "START", answer: "about", hardMode: true }).hardMode).toBe(true);
   });
 
   test("stays on for the next round", () => {
     const over = guess(hard(), "crane");
     expect(gameReducer(over, { type: "NEW_GAME", answer: "about" }).hardMode).toBe(true);
+  });
+});
+
+describe("START", () => {
+  test("replays saved guesses without validating them again", () => {
+    const state = gameReducer(loaded(), {
+      type: "START",
+      answer: "crane",
+      mode: "daily",
+      day: 7,
+      guesses: ["about", "nacre"],
+    });
+    expect(state).toMatchObject({ mode: "daily", day: 7, attempt: 2, status: "playing", letterPos: 0 });
+    expect(state.board[1].join("")).toBe("NACRE");
+    expect(state.evaluations[1]).toEqual(["almost", "almost", "almost", "almost", "correct"]);
+  });
+
+  test("a replayed winning guess ends the round", () => {
+    const state = gameReducer(loaded(), { type: "START", answer: "crane", guesses: ["about", "crane"] });
+    expect(state.status).toBe("won");
+    expect(state.attempt).toBe(2);
+  });
+
+  test("each round gets a new gameId", () => {
+    const first = loaded();
+    expect(gameReducer(first, { type: "START", answer: "about" }).gameId).toBe(first.gameId + 1);
   });
 });

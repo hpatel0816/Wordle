@@ -11,6 +11,9 @@ export const emptyBoard = () =>
 
 export const initialState = {
   status: "loading", // "loading" | "playing" | "won" | "lost"
+  mode: "unlimited", // "unlimited" | "daily" | "challenge"
+  day: null, // daily puzzle number when mode is "daily"
+  gameId: 0, // increases with every new round
   answers: [], // words that can be picked as the answer
   wordSet: new Set(), // every valid guess
   answer: "",
@@ -28,16 +31,42 @@ export function canChangeHardMode(state) {
   return state.status !== "playing" || state.attempt === 0;
 }
 
-function startGame(state, answer) {
-  return {
+// Start a round. `guesses` replays words already played (e.g. a saved
+// daily puzzle) without validating them again.
+function startGame(state, { answer, mode = "unlimited", day = null, guesses = [], hardMode }) {
+  let next = {
     ...state,
     status: "playing",
+    mode,
+    day,
     answer,
     board: emptyBoard(),
     evaluations: [],
     attempt: 0,
     letterPos: 0,
     message: null,
+    gameId: state.gameId + 1,
+    hardMode: hardMode ?? state.hardMode,
+  };
+  for (const word of guesses) {
+    if (next.status !== "playing") break;
+    next = scoreRow({ ...next, board: setTile(next.board, next.attempt, null, word) }, word);
+  }
+  return next;
+}
+
+// Score the current row and move to the next one (or end the round).
+function scoreRow(state, guess) {
+  const attempt = state.attempt + 1;
+  let status = "playing";
+  if (guess === state.answer) status = "won";
+  else if (attempt >= MAX_GUESSES) status = "lost";
+  return {
+    ...state,
+    evaluations: [...state.evaluations, scoreGuess(guess, state.answer)],
+    attempt,
+    letterPos: 0,
+    status,
   };
 }
 
@@ -48,22 +77,28 @@ function withMessage(state, text, { shake = false } = {}) {
   return { ...state, messageCount: id, message: { text, id, shake } };
 }
 
+// Set one tile, or a whole row from a word when col is null.
 function setTile(board, row, col, value) {
-  return board.map((letters, r) =>
-    r === row ? letters.map((l, c) => (c === col ? value : l)) : letters
-  );
+  return board.map((letters, r) => {
+    if (r !== row) return letters;
+    if (col === null) return [...value.toUpperCase()];
+    return letters.map((l, c) => (c === col ? value : l));
+  });
 }
 
 export function gameReducer(state, action) {
   switch (action.type) {
+    // { words, answers } plus the first round's START fields.
     case "LOADED":
       return startGame(
         { ...state, answers: action.answers, wordSet: new Set(action.words) },
-        action.answer
+        action
       );
 
+    // { answer, mode?, day?, guesses?, hardMode? }
+    case "START":
     case "NEW_GAME":
-      return startGame(state, action.answer);
+      return startGame(state, action);
 
     case "ADD_LETTER": {
       if (state.status !== "playing" || state.letterPos >= WORD_LENGTH) return state;
@@ -104,25 +139,20 @@ export function gameReducer(state, action) {
         if (error) return withMessage(state, error, { shake: true });
       }
 
-      const attempt = state.attempt + 1;
-      let status = "playing";
-      if (guess === state.answer) status = "won";
-      else if (attempt >= MAX_GUESSES) status = "lost";
-
-      return {
-        ...state,
-        evaluations: [...state.evaluations, scoreGuess(guess, state.answer)],
-        attempt,
-        letterPos: 0,
-        status,
-      };
+      return scoreRow(state, guess);
     }
 
+    // A finished round keeps the setting it was played with; the new
+    // setting applies from the next round (passed in START by the caller).
     case "SET_HARD_MODE":
       if (!canChangeHardMode(state)) {
         return withMessage(state, "Hard mode can only be changed at the start of a round");
       }
+      if (state.status !== "playing") return state;
       return { ...state, hardMode: action.on };
+
+    case "SHOW_MESSAGE":
+      return withMessage(state, action.text);
 
     case "CLEAR_MESSAGE":
       // Only clear the message the caller saw, not a newer one.
