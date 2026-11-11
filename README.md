@@ -1,74 +1,67 @@
-# Getting Started with Create React App
+# Wordle
 
-<<<<<<< HEAD
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
-=======
-### Contributors: Harsh Patel, Dhairya Prajapati, Radhe Patel
->>>>>>> 84e6a0c664e17c237367da1ce4be6cc554a9a145
+A browser word game built with React. Guess the hidden five-letter word in six tries. After each guess the tiles show how close you were. There's no daily limit: press **Play Again** for a new word whenever you like.
 
-## Available Scripts
+**Contributors:** Harsh Patel, Dhairya Prajapati, Radhe Patel
 
-In the project directory, you can run:
+## How to play
 
-### `npm start`
+- Type a five-letter word with your keyboard or the on-screen keys, then press **Enter**.
+- 🟩 **Green**: the letter is in the word and in the right spot.
+- 🟨 **Yellow**: the letter is in the word but in a different spot.
+- ⬛ **Dark grey**: the letter isn't in the word. Ruled-out letters can't be typed again.
+- Repeated letters are only colored as many times as they appear in the answer.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Press **?** in the top bar for the rules at any time, and **◐** for a high-contrast (orange/blue) palette.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Features
 
-### `npm test`
+- Unlimited rounds with a random answer drawn from the 1,500 most common words. All 5,757 words in the list are accepted as guesses.
+- Keyboard keys turn green, yellow or grey as you learn about each letter.
+- In-app messages ("Not in word list", "Not enough letters") with a row shake, instead of browser pop-ups.
+- Works on phones: square tiles and a keyboard that resize to the screen.
+- Accessible: colors meet WCAG AA contrast, keys are real buttons with screen-reader labels, and each scored guess is announced.
+- A How To Play dialog that opens on your first visit.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Getting started
 
-### `npm run build`
+Requires Node.js 18 or newer.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+npm install
+npm run dev
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Then open <http://localhost:3000>.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+| Command | What it does |
+|---|---|
+| `npm run dev` (or `npm start`) | Start the Vite dev server on port 3000 with hot reload |
+| `npm test` | Run the test suite once with Vitest |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run lint` | Lint with ESLint |
+| `npm run build` | Build for production into `dist/` |
+| `npm run preview` | Serve the production build locally |
 
-### `npm run eject`
+## Project structure
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+index.html              Page shell (Vite entry)
+public/                 Icons, manifest, robots.txt
+src/
+  main.jsx              Mounts <App />
+  App.jsx               Layout, word-list loading, physical keyboard, settings
+  gameState.js          gameReducer: all game rules (typing, submitting, win/lose, new game)
+  gameLogic.js          Pure helpers: scoreGuess, getKeyStatuses, getAnswerPool, parseWordList
+  Words.js              Fetches Word-Bank.txt at runtime
+  storage.js            Safe localStorage read/write for preferences
+  Word-Bank.txt         5,757 five-letter words, most common first, one per line (LF)
+  AppParts/             UI components (Display, Letter, Keyboard, Key, GameOver, Toast, HelpModal)
+  *.test.js(x)          Unit tests for the logic and reducer, plus App-level tests
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The game state lives in one reducer (`src/gameState.js`) and is shared through React context as `{ state, dispatch }`. Components only dispatch actions such as `ADD_LETTER`, `SUBMIT` or `NEW_GAME`, so the rules can be unit-tested without rendering anything.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Word list
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+`src/Word-Bank.txt` appears to be the Stanford GraphBase five-letter word list (ordered by frequency). Check its source and license before redistributing the project. `.gitattributes` keeps the file's line endings as LF on every OS.
