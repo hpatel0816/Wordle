@@ -5,6 +5,8 @@ import Keyboard from "./AppParts/Keyboard";
 import GameOver from './AppParts/GameOver';
 import Toast from './AppParts/Toast';
 import HelpModal from './AppParts/HelpModal';
+import SettingsModal from './AppParts/SettingsModal';
+import { SettingsIcon } from './AppParts/Icons';
 import { loadWordList } from './Words';
 import { getAnswerPool, pickAnswer } from './gameLogic';
 import { gameReducer, initialState } from './gameState';
@@ -15,20 +17,31 @@ export const AppContext = createContext(null);
 
 function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [theme, setTheme] = useState(() => readPreference("theme", systemTheme()));
   const [highContrast, setHighContrast] = useState(() => readPreference("highContrast", false));
 
-  // Show the rules automatically on a player's first visit.
-  const [helpOpen, setHelpOpen] = useState(() => !readPreference("seenHelp", false));
-  const helpOpenRef = useRef(helpOpen);
-  helpOpenRef.current = helpOpen;
+  // Which dialog is open: "help" | "settings" | null. The rules open
+  // automatically on a player's first visit.
+  const [modal, setModal] = useState(() => (readPreference("seenHelp", false) ? null : "help"));
+  const modalRef = useRef(modal);
+  modalRef.current = modal;
 
+  // Themes are applied to <html> so the page background follows too.
   useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = theme;
+    if (highContrast) root.dataset.palette = "high-contrast";
+    else delete root.dataset.palette;
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", theme === "light" ? "#ffffff" : "#121212");
+    writePreference("theme", theme);
     writePreference("highContrast", highContrast);
-  }, [highContrast]);
+  }, [theme, highContrast]);
 
-  const closeHelp = () => {
-    setHelpOpen(false);
-    writePreference("seenHelp", true);
+  const closeModal = () => {
+    if (modal === "help") writePreference("seenHelp", true);
+    setModal(null);
   };
 
   useEffect(() => {
@@ -47,8 +60,8 @@ function App() {
   useEffect(() => {
     const onKeyDown = (event) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return;
-      // Typing goes nowhere while the help dialog is open.
-      if (helpOpenRef.current) return;
+      // Typing goes nowhere while a dialog is open.
+      if (modalRef.current) return;
       if (event.key === "Enter") {
         // Let a focused button (e.g. Play Again, a key reached with Tab)
         // handle its own Enter press.
@@ -66,35 +79,35 @@ function App() {
 
   const gameOver = state.status === "won" || state.status === "lost";
 
+  const settings = [
+    {
+      id: "light-theme",
+      label: "Light theme",
+      checked: theme === "light",
+      onChange: (on) => setTheme(on ? "light" : "dark"),
+    },
+    {
+      id: "high-contrast",
+      label: "Color-blind colors",
+      description: "Orange and blue instead of green and yellow",
+      checked: highContrast,
+      onChange: setHighContrast,
+    },
+  ];
+
   return (
-    <div className="App" data-theme={highContrast ? "high-contrast" : undefined}>
+    <div className="App">
       <header className="topBar">
         <div className="topBarActions start">
-          <button
-            type="button"
-            className="iconButton"
-            aria-label="How to play"
-            title="How to play"
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => setHelpOpen(true)}
-          >
+          <HeaderButton label="How to play" onClick={() => setModal("help")}>
             ?
-          </button>
+          </HeaderButton>
         </div>
         <h1>Wordle</h1>
         <div className="topBarActions">
-          <button
-            type="button"
-            className="iconButton"
-            aria-label="High contrast colors"
-            title="High contrast colors"
-            aria-pressed={highContrast}
-            // Don't keep focus after a mouse click, so Enter still submits.
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => setHighContrast((on) => !on)}
-          >
-            ◐
-          </button>
+          <HeaderButton label="Settings" onClick={() => setModal("settings")}>
+            <SettingsIcon />
+          </HeaderButton>
         </div>
       </header>
       <AppContext.Provider value={{ state, dispatch }}>
@@ -104,9 +117,30 @@ function App() {
           {gameOver ? <GameOver /> : <Keyboard />}
         </main>
       </AppContext.Provider>
-      {helpOpen && <HelpModal onClose={closeHelp} />}
+      {modal === "help" && <HelpModal onClose={closeModal} />}
+      {modal === "settings" && <SettingsModal settings={settings} onClose={closeModal} />}
     </div>
   );
+}
+
+function HeaderButton({ label, onClick, children }) {
+  return (
+    <button
+      type="button"
+      className="iconButton"
+      aria-label={label}
+      title={label}
+      // Don't keep focus after a mouse click, so Enter still submits.
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+function systemTheme() {
+  return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
 }
 
 export default App;

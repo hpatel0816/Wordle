@@ -24,11 +24,38 @@
   --color-toast-bg: #ffffff;
   --color-toast-text: #121212;
 
+  --color-hover: #3a393c;
+  --color-surface: #1e1e20;
+  --color-muted-text: #b8b8ba;
+  --color-backdrop: rgba(0, 0, 0, 0.6);
+
   --radius: 4px;
+  color-scheme: dark;
 }
 
-/* Opt-in palette for color-blind players: orange/blue instead of green/yellow. */
-.App[data-theme="high-contrast"] {
+/* Light theme. Same AA contrast rules as the dark tokens above. */
+:root[data-theme="light"] {
+  --color-bg: #ffffff;
+  --color-text: #121212;
+  --color-divider: #d3d6da;
+  --color-tile-border: #8f9295;
+  --color-tile-border-filled: #565758;
+  --color-key: #d3d6da;
+  --color-key-text: #121212;
+  --color-absent: #6b6e70;
+  --color-absent-text: #ffffff;
+  --color-toast-bg: #121212;
+  --color-toast-text: #ffffff;
+  --color-hover: #e6e7e9;
+  --color-surface: #f4f4f5;
+  --color-muted-text: #545658;
+  --color-backdrop: rgba(0, 0, 0, 0.35);
+  color-scheme: light;
+}
+
+/* Opt-in palette for color-blind players: orange/blue instead of green/yellow.
+   Works with either theme. */
+:root[data-palette="high-contrast"] {
   --color-correct: #f5793a;
   --color-correct-text: #121212;
   --color-almost: #85c0f9;
@@ -95,9 +122,8 @@ body {
   place-items: center;
 }
 
-.iconButton:hover,
-.iconButton[aria-pressed="true"] {
-  background-color: var(--color-absent);
+.iconButton:hover {
+  background-color: var(--color-hover);
 }
 
 /* Visible focus ring for keyboard users on every button. */
@@ -297,7 +323,7 @@ button:focus-visible {
   position: fixed;
   inset: 0;
   z-index: 20;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--color-backdrop);
   display: grid;
   place-items: center;
   padding: 16px;
@@ -313,7 +339,9 @@ button:focus-visible {
   padding: 20px 24px;
   border-radius: 8px;
   background-color: var(--color-bg);
+  color: var(--color-text);
   border: 1px solid var(--color-tile-border);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   text-align: left;
   font-size: 15px;
   line-height: 1.4;
@@ -367,69 +395,71 @@ button:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .modalBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: grid;
-  place-items: center;
-  padding: 16px;
-}
-
-.modal {
-  position: relative;
-  width: 100%;
-  max-width: 440px;
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  box-sizing: border-box;
-  padding: 20px 24px;
-  border-radius: 8px;
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-tile-border);
-  text-align: left;
-  font-size: 15px;
-  line-height: 1.4;
-}
-
-.modal h2 {
-  margin: 0 0 8px;
-  font-size: 24px;
-}
-
-.modal h3 {
-  margin: 16px 0 8px;
-  font-size: 16px;
-}
-
-.modal ul {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.modalClose {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 28px;
-}
-
-.example p {
-  margin: 4px 0 12px;
-}
-
-.exampleRow {
-  display: flex;
-  gap: 4px;
-}
-
-.exampleRow .letter {
-  width: 36px;
-  font-size: 18px;
-}
-
-.shake {
+  .shake,
+  .switchKnob {
     animation: none;
+    transition: none;
   }
+}
+
+/* Settings rows with on/off switches. */
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.settingText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settingLabel {
+  font-size: 17px;
+  font-weight: bold;
+}
+
+.settingDescription {
+  font-size: 13px;
+  color: var(--color-muted-text);
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 13px;
+  background-color: var(--color-tile-border);
+  cursor: pointer;
+}
+
+.switch[aria-checked="true"] {
+  background-color: var(--color-correct);
+}
+
+.switch[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.switchKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  transition: transform 0.15s;
+}
+
+.switch[aria-checked="true"] .switchKnob {
+  transform: translateX(18px);
 }

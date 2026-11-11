@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import Modal from './Modal';
 import { MAX_GUESSES, STATUS_LABELS, WORD_LENGTH } from '../gameLogic';
 
 const EXAMPLES = [
@@ -20,49 +21,8 @@ function ExampleRow({ word, index, status }) {
 }
 
 function HelpModal({ onClose }) {
-  const closeRef = useRef(null);
-
-  // Focus the dialog on open and give focus back to where it was on close.
-  useEffect(() => {
-    const previouslyFocused = document.activeElement;
-    closeRef.current?.focus();
-    return () => previouslyFocused?.focus?.();
-  }, []);
-
-  const onKeyDown = (event) => {
-    if (event.key === "Escape") {
-      onClose();
-    } else if (event.key === "Tab") {
-      // The close button is the only focusable element: keep focus inside.
-      event.preventDefault();
-      closeRef.current?.focus();
-    }
-  };
-
   return (
-    <div
-      className="modalBackdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="help-title"
-        onKeyDown={onKeyDown}
-      >
-        <button
-          ref={closeRef}
-          type="button"
-          className="iconButton modalClose"
-          aria-label="Close"
-          onClick={onClose}
-        >
-          ×
-        </button>
-        <h2 id="help-title">How To Play</h2>
+    <Modal title="How To Play" titleId="help-title" onClose={onClose}>
         <p>Guess the hidden word in {MAX_GUESSES} tries.</p>
         <ul>
           <li>Each guess must be a valid {WORD_LENGTH}-letter word.</li>
@@ -86,10 +46,9 @@ function HelpModal({ onClose }) {
         <ul>
           <li>The keyboard shows what you've learned. Ruled-out letters turn dark and can't be typed again.</li>
           <li>There's no daily limit: press Play Again after a round for a new word.</li>
-          <li>Use ◐ in the top bar to switch to high-contrast colors.</li>
+          <li>Open Settings (the gear in the top bar) for a light theme and color-blind colors.</li>
         </ul>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

@@ -10,6 +10,8 @@ beforeEach(() => {
   localStorage.clear();
   // Skip the first-visit help dialog unless a test opts in.
   localStorage.setItem("seenHelp", "true");
+  delete document.documentElement.dataset.theme;
+  delete document.documentElement.dataset.palette;
   vi.spyOn(Math, "random").mockReturnValue(0);
   global.fetch = vi.fn(() => Promise.resolve({ text: () => Promise.resolve(WORDS) }));
 });
@@ -164,14 +166,37 @@ test("Enter on a focused button is left to the button", async () => {
   expect(screen.queryByText("You Correctly Guessed")).not.toBeInTheDocument();
 });
 
-test("high contrast toggle switches the theme and remembers the choice", async () => {
+test("settings switch to color-blind colors and remember the choice", async () => {
   await renderLoaded();
-  const toggle = screen.getByRole("button", { name: "High contrast colors" });
-  expect(toggle).toHaveAttribute("aria-pressed", "false");
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  const toggle = screen.getByRole("switch", { name: "Color-blind colors" });
+  expect(toggle).toHaveAttribute("aria-checked", "false");
   fireEvent.click(toggle);
-  expect(toggle).toHaveAttribute("aria-pressed", "true");
-  expect(document.querySelector(".App")).toHaveAttribute("data-theme", "high-contrast");
+  expect(toggle).toHaveAttribute("aria-checked", "true");
+  expect(document.documentElement).toHaveAttribute("data-palette", "high-contrast");
   expect(localStorage.getItem("highContrast")).toBe("true");
+});
+
+test("settings switch to a light theme that persists across visits", async () => {
+  const { unmount } = render(<App />);
+  await act(async () => {});
+  expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  fireEvent.click(screen.getByRole("switch", { name: "Light theme" }));
+  expect(document.documentElement).toHaveAttribute("data-theme", "light");
+  unmount();
+
+  await renderLoaded();
+  expect(document.documentElement).toHaveAttribute("data-theme", "light");
+});
+
+test("typing is ignored while settings are open", async () => {
+  await renderLoaded();
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  press("c");
+  fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(tileLetter(rowLetters(0)[0])).toBe("");
 });
 
 test("the help dialog opens on a first visit and is remembered once closed", async () => {
