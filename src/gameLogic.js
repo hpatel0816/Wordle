@@ -37,6 +37,13 @@ export function scoreGuess(guess, answer) {
   return result;
 }
 
+// Screen-reader wording for each tile/key status.
+export const STATUS_LABELS = {
+  correct: "correct",
+  almost: "in the word, wrong spot",
+  error: "not in the word",
+};
+
 const STATUS_RANK = { error: 1, almost: 2, correct: 3 };
 
 // Best-known status per letter across all submitted rows, e.g.

@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../App';
+import { STATUS_LABELS } from '../gameLogic';
 
 function Letter({ row, col }) {
   const { state } = useContext(AppContext);
@@ -10,6 +11,7 @@ function Letter({ row, col }) {
   return (
     <div className={["letter", status ?? (letter && "filled")].filter(Boolean).join(" ")}>
       {letter}
+      {status && <span className="visuallyHidden">, {STATUS_LABELS[status]}</span>}
     </div>
   );
 }

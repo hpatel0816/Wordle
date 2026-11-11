@@ -38,6 +38,11 @@ function tileState(el) {
   return ["correct", "almost", "error"].find((c) => el.classList.contains(c)) ?? "";
 }
 
+// The typed letter only, without the screen-reader status text.
+function tileLetter(el) {
+  return el.firstChild?.textContent ?? "";
+}
+
 function rowLetters(rowIndex) {
   return Array.from(document.querySelectorAll(".row")[rowIndex].children);
 }
@@ -54,6 +59,7 @@ test("keyboard keys show the best status for each guessed letter", async () => {
   guess("about");
   guess("cream");
   const key = (letter) => screen.getByText(letter, { selector: ".key" });
+  expect(key("T")).toHaveAccessibleName("T, not in the word");
   expect(key("C")).toHaveClass("correct");
   expect(key("R")).toHaveClass("correct");
   expect(key("A")).toHaveClass("almost");
@@ -110,11 +116,11 @@ test("Play Again starts a fresh round", async () => {
 
   expect(screen.queryByText("You Correctly Guessed")).not.toBeInTheDocument();
   expect([...document.querySelectorAll(".letter")].every((el) => tileState(el) === "")).toBe(true);
-  expect([...document.querySelectorAll(".letter")].every((el) => el.textContent === "")).toBe(true);
+  expect([...document.querySelectorAll(".letter")].every((el) => tileLetter(el) === "")).toBe(true);
 
   // The new round accepts input on the first row again.
   guess("about");
-  expect(rowLetters(0).map((el) => el.textContent).join("")).toBe("ABOUT");
+  expect(rowLetters(0).map(tileLetter).join("")).toBe("ABOUT");
 });
 
 test("six wrong guesses lose, and an invalid word on the last row does not", async () => {
@@ -127,4 +133,41 @@ test("six wrong guesses lose, and an invalid word on the last row does not", asy
   for (let i = 0; i < 5; i++) press("Backspace");
   guess("recan");
   expect(screen.getByText("Could Not Guess The Word")).toBeInTheDocument();
+});
+
+test("tiles and the announcer describe each scored guess for screen readers", async () => {
+  await renderLoaded();
+  guess("cream");
+  expect(rowLetters(0)[0]).toHaveTextContent("C, correct");
+  expect(rowLetters(0)[2]).toHaveTextContent("E, in the word, wrong spot");
+  expect(screen.getByTestId("guess-announcer")).toHaveTextContent(
+    "Guess 1: C correct, R correct, E in the word, wrong spot, A in the word, wrong spot, M not in the word"
+  );
+});
+
+test("on-screen keys are buttons and the Delete key has a text label", async () => {
+  await renderLoaded();
+  fireEvent.click(screen.getByRole("button", { name: "C" }));
+  expect(tileLetter(rowLetters(0)[0])).toBe("C");
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  expect(tileLetter(rowLetters(0)[0])).toBe("");
+});
+
+test("Enter on a focused button is left to the button", async () => {
+  await renderLoaded();
+  for (const c of "crane") press(c);
+  const cKey = screen.getByRole("button", { name: "C" });
+  fireEvent.keyDown(cKey, { key: "Enter" });
+  expect(screen.queryByText("You Correctly Guessed")).not.toBeInTheDocument();
+});
+
+test("high contrast toggle switches the theme and remembers the choice", async () => {
+  localStorage.clear();
+  await renderLoaded();
+  const toggle = screen.getByRole("button", { name: "High contrast colors" });
+  expect(toggle).toHaveAttribute("aria-pressed", "false");
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute("aria-pressed", "true");
+  expect(document.querySelector(".App")).toHaveAttribute("data-theme", "high-contrast");
+  expect(localStorage.getItem("highContrast")).toBe("true");
 });

@@ -14,7 +14,7 @@ function Keyboard() {
   const keyStatuses = getKeyStatuses(state.board, state.evaluations);
 
   return (
-    <div className="keyboard">
+    <div className="keyboard" role="group" aria-label="Keyboard">
       {KEY_ROWS.map((keys, i) => (
         <div className={i === 1 ? "keyboardRow offset" : "keyboardRow"} key={i}>
           {keys.map((key) => (
