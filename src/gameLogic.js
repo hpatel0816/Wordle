@@ -1,3 +1,5 @@
+import { APP_NAME } from "./brand";
+
 export const WORD_LENGTH = 5;
 export const MAX_GUESSES = 6;
 
@@ -179,7 +181,7 @@ export function shareEmoji({ highContrast = false, light = false } = {}) {
 }
 
 // Spoiler-free result, e.g.
-//   Wordle Daily #42 4/6*
+//   WeWordle Daily #42 4/6*
 //
 //   ⬛🟨⬛⬛⬛
 //   ...
@@ -190,7 +192,7 @@ export function buildShareText(state, display = {}) {
   const score = status === "won" ? attempt : "X";
   const emoji = shareEmoji(display);
   const grid = evaluations.map((row) => row.map((s) => emoji[s]).join("")).join("\n");
-  return `Wordle ${name} ${score}/${MAX_GUESSES}${hardMode ? "*" : ""}\n\n${grid}`;
+  return `${APP_NAME} ${name} ${score}/${MAX_GUESSES}${hardMode ? "*" : ""}\n\n${grid}`;
 }
 
 // ----- Challenge links -----

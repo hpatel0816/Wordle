@@ -198,7 +198,9 @@ function App() {
             ?
           </HeaderButton>
         </div>
-        <h1>Wordle</h1>
+        <h1 className="logo">
+          <span className="logoWe">We</span>Wordle
+        </h1>
         <div className="topBarActions">
           <HeaderButton label="Statistics" onClick={() => setModal("stats")}>
             <StatsIcon />

@@ -1,6 +1,10 @@
-# Wordle
+# WeWordle
 
-A browser word game built with React. Guess the hidden five-letter word in six tries. After each guess the tiles show how close you were. Play unlimited rounds, take on the daily puzzle, or send a friend a word to guess.
+A browser word game built with React, made for playing with friends. Guess the hidden five-letter word in six tries. After each guess the tiles show how close you were. Play unlimited rounds, take on the daily puzzle, or send a friend a word to guess.
+
+Head-to-head multiplayer, against friends or random opponents, is in progress (see [`docs/MULTIPLAYER_PLAN.md`](docs/MULTIPLAYER_PLAN.md)).
+
+WeWordle is a personal project inspired by Wordle. It isn't affiliated with The New York Times, or with other games that use a similar name.
 
 **Contributors:** Harsh Patel, Dhairya Prajapati, Radhe Patel
 
@@ -19,7 +23,7 @@ The top bar has **?** (rules), a bar chart (statistics) and a gear (settings).
 - **Two modes.** *Unlimited* draws a random answer from the 1,500 most common words; press **Play Again** for another. *Daily #N* is one puzzle per day, the same for every player (a seeded shuffle of the answer pool indexed by the local date), with a countdown to the next one. All 5,757 words in the list are accepted as guesses.
 - **Progress is saved.** Each mode's round is kept in `localStorage`, so a reload or a mode switch resumes where you left off.
 - **Statistics and streaks.** Games played, win %, current and max streak, and a guess distribution chart, tracked separately for Daily (wins on consecutive days) and Unlimited (wins in a row).
-- **Share your result.** A spoiler-free emoji grid (`Wordle Daily #42 4/6*`) copied to the clipboard, or sent through the share sheet on phones.
+- **Share your result.** A spoiler-free emoji grid (`WeWordle Daily #42 4/6*`) copied to the clipboard, or sent through the share sheet on phones.
 - **Challenge a friend.** Pick any valid word and send a link (`/?challenge=…`); the word is scrambled in the URL. Challenge rounds don't affect your stats.
 - **Hard mode.** Revealed hints must be used in later guesses. It can be changed only at the start of a round, and shared results mark it with `*`.
 - **Light and dark themes** (defaulting to the system setting) and an orange/blue **color-blind palette**, all in Settings.
@@ -65,6 +69,7 @@ src/
   share.js              Share sheet / clipboard helper
   Words.js              Fetches Word-Bank.txt at runtime
   storage.js            Safe localStorage read/write
+  brand.js              The app name (APP_NAME)
   Word-Bank.txt         5,757 five-letter words, most common first, one per line (LF)
   AppParts/             UI components (Display, Keyboard, GameOver, ModeSwitch, Toast, and the
                         Help, Settings, Statistics and Challenge dialogs built on Modal)

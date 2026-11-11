@@ -3,6 +3,7 @@ import Modal from './Modal';
 import { AppContext } from '../App';
 import { WORD_LENGTH, challengeUrl } from '../gameLogic';
 import { shareOrCopy } from '../share';
+import { APP_NAME } from '../brand';
 
 // Make a link that gives a friend a round with a word of the player's choice.
 function ChallengeModal({ suggestedWord = "", onClose }) {
@@ -22,7 +23,7 @@ function ChallengeModal({ suggestedWord = "", onClose }) {
       return;
     }
     const url = challengeUrl(guess);
-    const result = await shareOrCopy(`Can you guess my Wordle word? ${url}`);
+    const result = await shareOrCopy(`Can you guess my ${APP_NAME} word? ${url}`);
     if (result === "copied") setFeedback({ text: "Link copied. Send it to a friend!" });
     else if (result === "shared") setFeedback({ text: "Link shared!" });
     else if (result === "failed") setFeedback({ text: `Copy this link: ${url}` });

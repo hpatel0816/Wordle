@@ -168,13 +168,13 @@ describe("buildShareText", () => {
   };
 
   test("shows the puzzle, score and an emoji grid without letters", () => {
-    expect(buildShareText(finished)).toBe("Wordle Daily #42 2/6\n\n🟨⬛⬛⬛⬛\n🟩🟩🟩🟩🟩");
+    expect(buildShareText(finished)).toBe("WeWordle Daily #42 2/6\n\n🟨⬛⬛⬛⬛\n🟩🟩🟩🟩🟩");
   });
 
   test("marks hard mode and losses, and names the other modes", () => {
     const lost = { ...finished, mode: "unlimited", status: "lost", attempt: 6, hardMode: true };
-    expect(buildShareText(lost).split("\n")[0]).toBe("Wordle Unlimited X/6*");
-    expect(buildShareText({ ...finished, mode: "challenge" }).split("\n")[0]).toBe("Wordle Challenge 2/6");
+    expect(buildShareText(lost).split("\n")[0]).toBe("WeWordle Unlimited X/6*");
+    expect(buildShareText({ ...finished, mode: "challenge" }).split("\n")[0]).toBe("WeWordle Challenge 2/6");
   });
 
   test("matches the color-blind palette and light theme", () => {

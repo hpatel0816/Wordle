@@ -343,7 +343,7 @@ test("Share copies the emoji grid to the clipboard", async () => {
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Share" }));
   });
-  expect(writeText).toHaveBeenCalledWith("Wordle Unlimited 2/6\n\n🟨⬛⬛⬛⬛\n🟩🟩🟩🟩🟩");
+  expect(writeText).toHaveBeenCalledWith("WeWordle Unlimited 2/6\n\n🟨⬛⬛⬛⬛\n🟩🟩🟩🟩🟩");
   expect(screen.getAllByRole("status")[0]).toHaveTextContent("Copied to clipboard");
   delete navigator.clipboard;
 });
@@ -393,7 +393,7 @@ describe("challenge links", () => {
       fireEvent.click(within(dialog).getByRole("button", { name: "Copy link" }));
     });
     expect(writeText).toHaveBeenCalledWith(
-      `Can you guess my Wordle word? http://localhost:3000/?challenge=${encodeChallenge("about")}`
+      `Can you guess my WeWordle word? http://localhost:3000/?challenge=${encodeChallenge("about")}`
     );
     expect(within(dialog).getByRole("status")).toHaveTextContent("Link copied");
     delete navigator.clipboard;
