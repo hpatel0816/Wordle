@@ -7,10 +7,11 @@ import Toast from './AppParts/Toast';
 import HelpModal from './AppParts/HelpModal';
 import SettingsModal from './AppParts/SettingsModal';
 import StatsModal from './AppParts/StatsModal';
+import ChallengeModal from './AppParts/ChallengeModal';
 import { SettingsIcon, StatsIcon } from './AppParts/Icons';
 import { loadStats, recordResult, saveStats } from './stats';
 import { loadWordList } from './Words';
-import { getAnswerPool, getDayNumber } from './gameLogic';
+import { CHALLENGE_PARAM, decodeChallenge, getAnswerPool, getDayNumber } from './gameLogic';
 import { canChangeHardMode, gameReducer, initialState } from './gameState';
 import { readPreference, writePreference } from './storage';
 import { roundFor, saveGame } from './savedGames';
@@ -25,7 +26,7 @@ function App() {
   const [theme, setTheme] = useState(() => readPreference("theme", systemTheme()));
   const [highContrast, setHighContrast] = useState(() => readPreference("highContrast", false));
 
-  // Which dialog is open: "help" | "settings" | "stats" | null. The rules open
+  // Which dialog is open: "help" | "settings" | "stats" | "challenge" | null. The rules open
   // automatically on a player's first visit.
   const [modal, setModal] = useState(() => (readPreference("seenHelp", false) ? null : "help"));
   const modalRef = useRef(modal);
@@ -54,6 +55,7 @@ function App() {
 
   // Start (or resume) a round in "daily" or "unlimited" mode.
   const startRound = useCallback((mode) => {
+    clearChallengeFromUrl();
     writePreference("mode", mode);
     dispatch({ type: "START", ...roundFor(mode, answersRef.current, hardModeRef.current) });
   }, []);
@@ -108,9 +110,22 @@ function App() {
     loadWordList().then((words) => {
       if (cancelled) return;
       const answers = getAnswerPool(words);
+      const hardMode = readPreference("hardMode", false);
+
+      // A friend's challenge link starts a round with their word.
+      const code = new URLSearchParams(window.location.search).get(CHALLENGE_PARAM);
+      const challengeWord = code && decodeChallenge(code, new Set(words));
+      if (challengeWord) {
+        dispatch({ type: "LOADED", words, answers, mode: "challenge", answer: challengeWord, hardMode });
+        return;
+      }
+
       const mode = readPreference("mode", "unlimited") === "daily" ? "daily" : "unlimited";
-      const round = roundFor(mode, answers, readPreference("hardMode", false));
-      dispatch({ type: "LOADED", words, answers, ...round });
+      dispatch({ type: "LOADED", words, answers, ...roundFor(mode, answers, hardMode) });
+      if (code) {
+        clearChallengeFromUrl();
+        dispatch({ type: "SHOW_MESSAGE", text: "That challenge link isn't valid" });
+      }
     });
     return () => {
       cancelled = true;
@@ -167,6 +182,14 @@ function App() {
     },
   ];
 
+  const context = {
+    state,
+    dispatch,
+    startRound,
+    openModal: setModal,
+    display: { highContrast, light: theme === "light" },
+  };
+
   return (
     <div className="App">
       <header className="topBar">
@@ -185,31 +208,42 @@ function App() {
           </HeaderButton>
         </div>
       </header>
-      <AppContext.Provider
-        value={{ state, dispatch, startRound, openModal: setModal, display: { highContrast, light: theme === "light" } }}
-      >
+      <AppContext.Provider value={context}>
         <Toast />
         <main className="game">
           <ModeSwitch dailyNumber={getDayNumber() + 1} />
           <Display />
           {gameOver ? <GameOver /> : <Keyboard />}
         </main>
+        {modal === "help" && <HelpModal onClose={closeModal} />}
+        {modal === "settings" && (
+          <SettingsModal settings={settings} onClose={closeModal}>
+            <button type="button" className="secondaryButton settingsAction" onClick={() => setModal("challenge")}>
+              Challenge a friend with your own word
+            </button>
+          </SettingsModal>
+        )}
+        {modal === "challenge" && (
+          <ChallengeModal
+            // Don't suggest the daily answer: it would spoil the friend's daily.
+            suggestedWord={state.status !== "playing" && state.mode !== "daily" ? state.answer : ""}
+            onClose={closeModal}
+          />
+        )}
+        {modal === "stats" && (
+          <StatsModal
+            stats={stats}
+            initialMode={state.mode === "daily" ? "daily" : "unlimited"}
+            today={getDayNumber()}
+            highlight={
+              state.status === "won" && state.mode !== "challenge"
+                ? { mode: state.mode, attempts: state.attempt }
+                : null
+            }
+            onClose={closeModal}
+          />
+        )}
       </AppContext.Provider>
-      {modal === "help" && <HelpModal onClose={closeModal} />}
-      {modal === "settings" && <SettingsModal settings={settings} onClose={closeModal} />}
-      {modal === "stats" && (
-        <StatsModal
-          stats={stats}
-          initialMode={state.mode === "daily" ? "daily" : "unlimited"}
-          today={getDayNumber()}
-          highlight={
-            state.status === "won" && state.mode !== "challenge"
-              ? { mode: state.mode, attempts: state.attempt }
-              : null
-          }
-          onClose={closeModal}
-        />
-      )}
     </div>
   );
 }
@@ -228,6 +262,13 @@ function HeaderButton({ label, onClick, children }) {
       {children}
     </button>
   );
+}
+
+function clearChallengeFromUrl() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(CHALLENGE_PARAM)) return;
+  url.searchParams.delete(CHALLENGE_PARAM);
+  window.history.replaceState(null, "", url);
 }
 
 function systemTheme() {

@@ -40,6 +40,7 @@ function GameOver() {
   const { state, dispatch, startRound, openModal, display } = useContext(AppContext);
   const won = state.status === "won";
   const daily = state.mode === "daily";
+  const unlimited = state.mode === "unlimited";
 
   const share = async () => {
     const result = await shareOrCopy(buildShareText(state, display));
@@ -59,13 +60,16 @@ function GameOver() {
       <div className="gameOverActions">
         {/* autoFocus lets Enter start the next round */}
         <button type="button" className="playAgain" onClick={() => startRound("unlimited")} autoFocus>
-          {daily ? "Play Unlimited" : "Play Again"}
+          {unlimited ? "Play Again" : "Play Unlimited"}
         </button>
         <button type="button" className="secondaryButton" onClick={share}>
           Share
         </button>
         <button type="button" className="secondaryButton" onClick={() => openModal("stats")}>
           Statistics
+        </button>
+        <button type="button" className="secondaryButton" onClick={() => openModal("challenge")}>
+          Challenge a friend
         </button>
       </div>
     </div>

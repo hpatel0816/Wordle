@@ -3,6 +3,8 @@ import path from "path";
 import {
   ANSWER_POOL_SIZE,
   buildShareText,
+  decodeChallenge,
+  encodeChallenge,
   getAnswerPool,
   getDailyAnswer,
   getDayNumber,
@@ -178,5 +180,26 @@ describe("buildShareText", () => {
   test("matches the color-blind palette and light theme", () => {
     const text = buildShareText(finished, { highContrast: true, light: true });
     expect(text.split("\n").slice(2)).toEqual(["🟦⬜⬜⬜⬜", "🟧🟧🟧🟧🟧"]);
+  });
+});
+
+describe("challenge codes", () => {
+  const words = new Set(["crane", "about", "zebra"]);
+
+  test("round-trip a word without showing it", () => {
+    for (const word of words) {
+      const code = encodeChallenge(word);
+      expect(code).toMatch(/^[a-z]{5}$/);
+      expect(code).not.toBe(word);
+      expect(decodeChallenge(code, words)).toBe(word);
+      expect(decodeChallenge(code.toUpperCase(), words)).toBe(word);
+    }
+  });
+
+  test("reject codes that aren't a valid word", () => {
+    expect(decodeChallenge(encodeChallenge("qqqqq"), words)).toBeNull();
+    expect(decodeChallenge("abc", words)).toBeNull();
+    expect(decodeChallenge("ab1de", words)).toBeNull();
+    expect(decodeChallenge(null, words)).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 import { render, screen, act, fireEvent, within } from "@testing-library/react";
 import App from "./App";
-import { getAnswerPool, getDailyAnswer, getDayNumber, parseWordList } from "./gameLogic";
+import { encodeChallenge, getAnswerPool, getDailyAnswer, getDayNumber, parseWordList } from "./gameLogic";
 
 // LF-only, like the committed Word-Bank.txt. With Math.random mocked to 0,
 // the answer is always the first word. The NACRE-style entries reuse only
@@ -19,6 +19,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  window.history.replaceState(null, "", "/");
   delete global.fetch;
 });
 
@@ -345,4 +346,56 @@ test("Share copies the emoji grid to the clipboard", async () => {
   expect(writeText).toHaveBeenCalledWith("Wordle Unlimited 2/6\n\n🟨⬛⬛⬛⬛\n🟩🟩🟩🟩🟩");
   expect(screen.getAllByRole("status")[0]).toHaveTextContent("Copied to clipboard");
   delete navigator.clipboard;
+});
+
+describe("challenge links", () => {
+  test("a challenge link starts a round with the friend's word that isn't counted in stats", async () => {
+    window.history.replaceState(null, "", `/?challenge=${encodeChallenge("nacre")}`);
+    await renderLoaded();
+    expect(screen.getByRole("button", { name: "Friend's challenge" })).toHaveAttribute("aria-pressed", "true");
+    guess("nacre");
+    expect(screen.getByText("You Correctly Guessed")).toBeInTheDocument();
+    expect(localStorage.getItem("stats:unlimited")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Play Unlimited" }));
+    expect(window.location.search).toBe("");
+    expect(screen.getByRole("button", { name: "Unlimited" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("an invalid challenge link falls back to a normal round with a message", async () => {
+    window.history.replaceState(null, "", "/?challenge=zzzzz");
+    await renderLoaded();
+    expect(screen.getByRole("button", { name: "Unlimited" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("status")[0]).toHaveTextContent("That challenge link isn't valid");
+    expect(window.location.search).toBe("");
+  });
+
+  test("Challenge a friend copies a link for the word just played or a chosen word", async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    await renderLoaded();
+    guess("crane");
+    fireEvent.click(screen.getByRole("button", { name: "Challenge a friend" }));
+    const dialog = screen.getByRole("dialog", { name: "Challenge a Friend" });
+    const input = within(dialog).getByLabelText("Word");
+    expect(input).toHaveValue("CRANE");
+
+    fireEvent.change(input, { target: { value: "zz1zzz" } });
+    expect(input).toHaveValue("ZZZZZ");
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole("button", { name: "Copy link" }));
+    });
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Not in word list");
+    expect(writeText).not.toHaveBeenCalled();
+
+    fireEvent.change(input, { target: { value: "about" } });
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole("button", { name: "Copy link" }));
+    });
+    expect(writeText).toHaveBeenCalledWith(
+      `Can you guess my Wordle word? http://localhost:3000/?challenge=${encodeChallenge("about")}`
+    );
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Link copied");
+    delete navigator.clipboard;
+  });
 });

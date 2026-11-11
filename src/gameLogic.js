@@ -192,3 +192,30 @@ export function buildShareText(state, display = {}) {
   const grid = evaluations.map((row) => row.map((s) => emoji[s]).join("")).join("\n");
   return `Wordle ${name} ${score}/${MAX_GUESSES}${hardMode ? "*" : ""}\n\n${grid}`;
 }
+
+// ----- Challenge links -----
+
+// A challenge link carries the answer in the URL, lightly scrambled so it
+// isn't readable at a glance (this hides it, it doesn't secure it).
+const shift = (i) => 7 + 3 * i;
+
+export function encodeChallenge(word) {
+  return [...word.toLowerCase()]
+    .map((ch, i) => String.fromCharCode(97 + ((ch.charCodeAt(0) - 97 + shift(i)) % 26)))
+    .join("");
+}
+
+// Returns the word, or null if the code isn't a valid word.
+export function decodeChallenge(code, wordSet) {
+  if (typeof code !== "string" || !/^[a-z]+$/i.test(code)) return null;
+  const word = [...code.toLowerCase()]
+    .map((ch, i) => String.fromCharCode(97 + ((ch.charCodeAt(0) - 97 - shift(i) + 26 * 26) % 26)))
+    .join("");
+  return word.length === WORD_LENGTH && wordSet.has(word) ? word : null;
+}
+
+export const CHALLENGE_PARAM = "challenge";
+
+export function challengeUrl(word, location = window.location) {
+  return `${location.origin}${location.pathname}?${CHALLENGE_PARAM}=${encodeChallenge(word)}`;
+}
