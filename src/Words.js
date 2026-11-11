@@ -14,7 +14,11 @@ export const generateWordSet = async () => {
   await fetch(wordBank)
     .then((response) => response.text())
     .then((result) => {
-      const wordArray = result.split("\r\n");
+      // Handle both LF and CRLF line endings; normalize to lowercase.
+      const wordArray = result
+        .split(/\r?\n/)
+        .map((word) => word.trim().toLowerCase())
+        .filter(Boolean);
       todaysWord = wordArray[Math.floor(Math.random()*wordArray.length)];
       wordSet = new Set(wordArray);
     });

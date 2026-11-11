@@ -48,11 +48,14 @@ function App() {
       currWord += display[currAttempt.attempt][i];
     }
 
-    if (wordSet.has(currWord.toLowerCase())) {
-      setCurrAttempt({attempt: currAttempt.attempt + 1, letterPos: 0});
-    } else {
+    currWord = currWord.toLowerCase();
+
+    if (!wordSet.has(currWord)) {
       alert("Word Not Found");
+      return;
     }
+
+    setCurrAttempt({attempt: currAttempt.attempt + 1, letterPos: 0});
 
     if (currWord === correctWord) {
       setGameOver({gameOver: true, guessedWord: true});
