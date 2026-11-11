@@ -1,7 +1,8 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../App';
 
-function Key({ keyVal, bigKey, disabled }) {
+// status is "correct" | "almost" | "error" once the letter has been guessed.
+function Key({ keyVal, bigKey, status }) {
   const { dispatch } = useContext(AppContext);
 
   const onClick = () => {
@@ -15,7 +16,11 @@ function Key({ keyVal, bigKey, disabled }) {
   };
 
   return (
-    <div className="key" id={bigKey ? "big" : disabled ? "disabled" : undefined} onClick={onClick}>
+    <div
+      className={["key", bigKey && "big", status].filter(Boolean).join(" ")}
+      aria-disabled={status === "error" ? "true" : undefined}
+      onClick={onClick}
+    >
       {keyVal}
     </div>
   );

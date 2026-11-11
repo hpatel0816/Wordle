@@ -1,4 +1,4 @@
-import { MAX_GUESSES, WORD_LENGTH, scoreGuess } from "./gameLogic";
+import { MAX_GUESSES, WORD_LENGTH, getKeyStatuses, scoreGuess } from "./gameLogic";
 
 export const emptyBoard = () =>
   Array.from({ length: MAX_GUESSES }, () => Array(WORD_LENGTH).fill(""));
@@ -55,9 +55,14 @@ export function gameReducer(state, action) {
 
     case "ADD_LETTER": {
       if (state.status !== "playing" || state.letterPos >= WORD_LENGTH) return state;
+      const letter = action.letter.toUpperCase();
+      // Letters already ruled out can't be typed again; say why instead.
+      if (getKeyStatuses(state.board, state.evaluations)[letter] === "error") {
+        return withMessage(state, `${letter} is not in the word`);
+      }
       return {
         ...state,
-        board: setTile(state.board, state.attempt, state.letterPos, action.letter.toUpperCase()),
+        board: setTile(state.board, state.attempt, state.letterPos, letter),
         letterPos: state.letterPos + 1,
       };
     }

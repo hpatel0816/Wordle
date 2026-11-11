@@ -126,13 +126,22 @@ nav h1 {
   user-select: none;
 }
 
-#big {
+.key.big {
   flex: 1.5;
   font-size: clamp(10px, 2.8vw, 14px);
 }
 
-#disabled {
+.key.correct {
+  background-color: #528d4e;
+}
+
+.key.almost {
+  background-color: #b49f39;
+}
+
+.key.error {
   background-color: #3a393c;
+  cursor: not-allowed;
 }
 
 .gameOver {

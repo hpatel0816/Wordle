@@ -2,8 +2,9 @@ import { render, screen, act, fireEvent } from "@testing-library/react";
 import App from "./App";
 
 // LF-only, like the committed Word-Bank.txt. With Math.random mocked to 0,
-// the answer is always the first word.
-const WORDS = "crane\nabout\nother\nwhich\nthere\ntheir\nwould\n";
+// the answer is always the first word. The NACRE-style entries reuse only
+// CRANE's letters, so none get ruled out across six wrong guesses.
+const WORDS = "crane\nabout\ncream\nnacre\ncaner\nrance\nancre\nacern\nrecan\n";
 
 beforeEach(() => {
   jest.spyOn(Math, "random").mockReturnValue(0);
@@ -41,6 +42,28 @@ test("accepts a valid word from an LF word list and colors the row", async () =>
   guess("about");
   expect(screen.queryByRole("status")).toBeEmptyDOMElement();
   expect(rowLetters(0).map((el) => el.id)).toEqual(["almost", "error", "error", "error", "error"]);
+});
+
+test("keyboard keys show the best status for each guessed letter", async () => {
+  await renderLoaded();
+  guess("about");
+  guess("cream");
+  const key = (letter) => screen.getByText(letter, { selector: ".key" });
+  expect(key("C")).toHaveClass("correct");
+  expect(key("R")).toHaveClass("correct");
+  expect(key("A")).toHaveClass("almost");
+  expect(key("E")).toHaveClass("almost");
+  expect(key("T")).toHaveClass("error");
+  expect(key("T")).toHaveAttribute("aria-disabled", "true");
+  expect(key("Q").className).toBe("key");
+});
+
+test("typing a ruled-out letter is blocked with an explanation", async () => {
+  await renderLoaded();
+  guess("about");
+  press("t");
+  expect(rowLetters(1)[0]).toHaveTextContent("");
+  expect(screen.getByRole("status")).toHaveTextContent("T is not in the word");
 });
 
 test("rejects a word that is not in the list without using up a row", async () => {
@@ -91,12 +114,12 @@ test("Play Again starts a fresh round", async () => {
 
 test("six wrong guesses lose, and an invalid word on the last row does not", async () => {
   await renderLoaded();
-  ["about", "other", "which", "there", "their"].forEach(guess);
+  ["nacre", "caner", "rance", "ancre", "acern"].forEach(guess);
 
   guess("zzzzz");
   expect(screen.queryByText("Could Not Guess The Word")).not.toBeInTheDocument();
 
   for (let i = 0; i < 5; i++) press("Backspace");
-  guess("would");
+  guess("recan");
   expect(screen.getByText("Could Not Guess The Word")).toBeInTheDocument();
 });

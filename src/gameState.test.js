@@ -1,6 +1,8 @@
 import { gameReducer, initialState } from "./gameState";
 
-const WORDS = ["crane", "about", "other", "which", "there", "their", "would"];
+// The NACRE-style entries reuse only CRANE's letters, so no letter gets
+// ruled out and six wrong guesses can be made in a row.
+const WORDS = ["crane", "about", "nacre", "caner", "rance", "ancre", "acern", "recan"];
 
 function loaded(answer = "crane") {
   return gameReducer(initialState, { type: "LOADED", words: WORDS, answer });
@@ -63,9 +65,9 @@ test("guessing the answer wins and blocks further input", () => {
 
 test("six wrong guesses lose", () => {
   let state = loaded();
-  ["about", "other", "which", "there", "their"].forEach((w) => (state = guess(state, w)));
+  ["nacre", "caner", "rance", "ancre", "acern"].forEach((w) => (state = guess(state, w)));
   expect(state.status).toBe("playing");
-  state = guess(state, "would");
+  state = guess(state, "recan");
   expect(state.status).toBe("lost");
 });
 
@@ -90,4 +92,15 @@ test("CLEAR_MESSAGE only clears the matching message", () => {
   const state = guess(loaded(), "zzzzz");
   expect(gameReducer(state, { type: "CLEAR_MESSAGE", id: -1 })).toBe(state);
   expect(gameReducer(state, { type: "CLEAR_MESSAGE", id: state.message.id }).message).toBeNull();
+});
+
+test("letters ruled out by earlier guesses cannot be typed", () => {
+  // ABOUT vs CRANE: B, O, U, T are absent; A is present elsewhere.
+  const afterGuess = guess(loaded(), "about");
+  const blocked = gameReducer(afterGuess, { type: "ADD_LETTER", letter: "t" });
+  expect(blocked.board[1]).toEqual(["", "", "", "", ""]);
+  expect(blocked.message).toMatchObject({ text: "T is not in the word", shake: false });
+
+  const allowed = gameReducer(afterGuess, { type: "ADD_LETTER", letter: "a" });
+  expect(allowed.board[1][0]).toBe("A");
 });

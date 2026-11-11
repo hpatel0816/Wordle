@@ -22,7 +22,7 @@ function Keyboard() {
               key={key}
               keyVal={key}
               bigKey={key.length > 1}
-              disabled={keyStatuses[key] === "error"}
+              status={keyStatuses[key]}
             />
           ))}
         </div>
