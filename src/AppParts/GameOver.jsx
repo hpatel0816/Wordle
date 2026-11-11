@@ -36,7 +36,7 @@ function NextDaily({ onReady }) {
 }
 
 function GameOver() {
-  const { state, startRound } = useContext(AppContext);
+  const { state, startRound, openModal } = useContext(AppContext);
   const won = state.status === "won";
   const daily = state.mode === "daily";
 
@@ -50,10 +50,15 @@ function GameOver() {
         </p>
       )}
       {daily && <NextDaily onReady={() => startRound("daily")} />}
-      {/* autoFocus lets Enter start the next round */}
-      <button type="button" className="playAgain" onClick={() => startRound("unlimited")} autoFocus>
-        {daily ? "Play Unlimited" : "Play Again"}
-      </button>
+      <div className="gameOverActions">
+        {/* autoFocus lets Enter start the next round */}
+        <button type="button" className="playAgain" onClick={() => startRound("unlimited")} autoFocus>
+          {daily ? "Play Unlimited" : "Play Again"}
+        </button>
+        <button type="button" className="secondaryButton" onClick={() => openModal("stats")}>
+          Statistics
+        </button>
+      </div>
     </div>
   );
 }

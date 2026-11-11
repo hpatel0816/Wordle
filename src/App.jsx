@@ -6,7 +6,9 @@ import GameOver from './AppParts/GameOver';
 import Toast from './AppParts/Toast';
 import HelpModal from './AppParts/HelpModal';
 import SettingsModal from './AppParts/SettingsModal';
-import { SettingsIcon } from './AppParts/Icons';
+import StatsModal from './AppParts/StatsModal';
+import { SettingsIcon, StatsIcon } from './AppParts/Icons';
+import { loadStats, recordResult, saveStats } from './stats';
 import { loadWordList } from './Words';
 import { getAnswerPool, getDayNumber } from './gameLogic';
 import { canChangeHardMode, gameReducer, initialState } from './gameState';
@@ -14,7 +16,8 @@ import { readPreference, writePreference } from './storage';
 import { roundFor, saveGame } from './savedGames';
 import ModeSwitch from './AppParts/ModeSwitch';
 
-// Provides { state, dispatch, startRound }; all game rules live in gameReducer.
+// Provides { state, dispatch, startRound, openModal }; all game rules live
+// in gameReducer.
 export const AppContext = createContext(null);
 
 function App() {
@@ -22,7 +25,7 @@ function App() {
   const [theme, setTheme] = useState(() => readPreference("theme", systemTheme()));
   const [highContrast, setHighContrast] = useState(() => readPreference("highContrast", false));
 
-  // Which dialog is open: "help" | "settings" | null. The rules open
+  // Which dialog is open: "help" | "settings" | "stats" | null. The rules open
   // automatically on a player's first visit.
   const [modal, setModal] = useState(() => (readPreference("seenHelp", false) ? null : "help"));
   const modalRef = useRef(modal);
@@ -61,6 +64,26 @@ function App() {
     writePreference("hardMode", on);
     dispatch({ type: "SET_HARD_MODE", on });
   };
+
+  const [stats, setStats] = useState(() => ({
+    daily: loadStats("daily"),
+    unlimited: loadStats("unlimited"),
+  }));
+
+  // Record each round once, when the player's guess ends it. Resumed
+  // rounds and friends' challenges don't count.
+  const recordedGameRef = useRef(null);
+  useEffect(() => {
+    if (!state.justFinished || state.mode === "challenge") return;
+    if (recordedGameRef.current === state.gameId) return;
+    recordedGameRef.current = state.gameId;
+    const result = { won: state.status === "won", attempts: state.attempt, day: state.day };
+    setStats((prev) => {
+      const next = recordResult(prev[state.mode], result);
+      saveStats(state.mode, next);
+      return { ...prev, [state.mode]: next };
+    });
+  }, [state.justFinished, state.gameId, state.mode, state.status, state.attempt, state.day]);
 
   // Save progress after every change so a reload resumes the round.
   useEffect(() => {
@@ -154,12 +177,15 @@ function App() {
         </div>
         <h1>Wordle</h1>
         <div className="topBarActions">
+          <HeaderButton label="Statistics" onClick={() => setModal("stats")}>
+            <StatsIcon />
+          </HeaderButton>
           <HeaderButton label="Settings" onClick={() => setModal("settings")}>
             <SettingsIcon />
           </HeaderButton>
         </div>
       </header>
-      <AppContext.Provider value={{ state, dispatch, startRound }}>
+      <AppContext.Provider value={{ state, dispatch, startRound, openModal: setModal }}>
         <Toast />
         <main className="game">
           <ModeSwitch dailyNumber={getDayNumber() + 1} />
@@ -169,6 +195,19 @@ function App() {
       </AppContext.Provider>
       {modal === "help" && <HelpModal onClose={closeModal} />}
       {modal === "settings" && <SettingsModal settings={settings} onClose={closeModal} />}
+      {modal === "stats" && (
+        <StatsModal
+          stats={stats}
+          initialMode={state.mode === "daily" ? "daily" : "unlimited"}
+          today={getDayNumber()}
+          highlight={
+            state.status === "won" && state.mode !== "challenge"
+              ? { mode: state.mode, attempts: state.attempt }
+              : null
+          }
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 }

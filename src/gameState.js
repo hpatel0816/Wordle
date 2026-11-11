@@ -14,6 +14,7 @@ export const initialState = {
   mode: "unlimited", // "unlimited" | "daily" | "challenge"
   day: null, // daily puzzle number when mode is "daily"
   gameId: 0, // increases with every new round
+  justFinished: false, // true when the latest guess ended the round (not a replay)
   answers: [], // words that can be picked as the answer
   wordSet: new Set(), // every valid guess
   answer: "",
@@ -52,7 +53,7 @@ function startGame(state, { answer, mode = "unlimited", day = null, guesses = []
     if (next.status !== "playing") break;
     next = scoreRow({ ...next, board: setTile(next.board, next.attempt, null, word) }, word);
   }
-  return next;
+  return { ...next, justFinished: false };
 }
 
 // Score the current row and move to the next one (or end the round).
@@ -67,6 +68,7 @@ function scoreRow(state, guess) {
     attempt,
     letterPos: 0,
     status,
+    justFinished: status !== "playing",
   };
 }
 

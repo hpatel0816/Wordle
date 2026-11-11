@@ -1,4 +1,4 @@
-import { render, screen, act, fireEvent } from "@testing-library/react";
+import { render, screen, act, fireEvent, within } from "@testing-library/react";
 import App from "./App";
 import { getAnswerPool, getDailyAnswer, getDayNumber, parseWordList } from "./gameLogic";
 
@@ -294,4 +294,41 @@ test("an unfinished round resumes after a reload", async () => {
   expect(rowLetters(0).map(tileState)).toEqual(["almost", "error", "error", "error", "error"]);
   guess("crane");
   expect(screen.getByText(/You Guessed In 2 Tries/)).toBeInTheDocument();
+});
+
+describe("statistics", () => {
+  const statValue = (label) =>
+    screen.getByText(label, { selector: "dt" }).parentElement.querySelector("dd").textContent;
+
+  test("a finished round is counted once and shown in the Statistics dialog", async () => {
+    const { unmount } = render(<App />);
+    await act(async () => {});
+    guess("about");
+    guess("crane");
+    fireEvent.click(screen.getAllByRole("button", { name: "Statistics" })[0]);
+    const dialog = screen.getByRole("dialog", { name: "Statistics" });
+    expect(within(dialog).getByRole("button", { name: "Unlimited" })).toHaveAttribute("aria-pressed", "true");
+    expect(statValue("Played")).toBe("1");
+    expect(statValue("Win %")).toBe("100");
+    expect(statValue("Current Streak")).toBe("1");
+    expect(screen.getByText("2 guesses: 1 win")).toBeInTheDocument();
+    unmount();
+
+    // Reloading shows the finished round again without counting it twice.
+    await renderLoaded();
+    fireEvent.click(screen.getAllByRole("button", { name: "Statistics" })[0]);
+    expect(statValue("Played")).toBe("1");
+  });
+
+  test("a loss resets the streak", async () => {
+    await renderLoaded();
+    guess("crane");
+    fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
+    ["nacre", "caner", "rance", "ancre", "acern", "recan"].forEach(guess);
+    fireEvent.click(screen.getAllByRole("button", { name: "Statistics" })[0]);
+    expect(statValue("Played")).toBe("2");
+    expect(statValue("Win %")).toBe("50");
+    expect(statValue("Current Streak")).toBe("0");
+    expect(statValue("Max Streak")).toBe("1");
+  });
 });
