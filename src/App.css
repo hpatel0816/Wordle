@@ -29,10 +29,11 @@
   --color-muted-text: #b8b8ba;
   --color-backdrop: rgba(0, 0, 0, 0.6);
 
-  /* Brand accent for primary buttons and selected controls. */
-  --color-brand: #6d4fd6;
-  --color-brand-text: #ffffff;
-  --color-brand-strong: #b9a6ff; /* brand-colored text on the background */
+  /* Accent for primary buttons and selected controls: the "correct" green
+     (orange with the color-blind palette), as in the original design. */
+  --color-brand: var(--color-correct);
+  --color-brand-text: var(--color-correct-text);
+  --color-brand-strong: var(--color-text); /* accent text on the background */
 
   --radius: 4px;
   color-scheme: dark;
@@ -55,7 +56,6 @@
   --color-surface: #f4f4f5;
   --color-muted-text: #545658;
   --color-backdrop: rgba(0, 0, 0, 0.35);
-  --color-brand-strong: #5b3cc4;
   color-scheme: light;
 }
 
