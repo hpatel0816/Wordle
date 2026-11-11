@@ -2,7 +2,7 @@ import React from 'react';
 import Modal from './Modal';
 
 // One on/off setting, rendered as an accessible switch.
-function SettingSwitch({ id, label, description, checked, onChange }) {
+function SettingSwitch({ id, label, description, checked, disabled, onChange }) {
   return (
     <div className="setting">
       <div className="settingText">
@@ -16,9 +16,10 @@ function SettingSwitch({ id, label, description, checked, onChange }) {
         role="switch"
         className="switch"
         aria-checked={checked}
+        aria-disabled={disabled || undefined}
         aria-labelledby={`${id}-label`}
         aria-describedby={description ? `${id}-desc` : undefined}
-        onClick={() => onChange(!checked)}
+        onClick={() => !disabled && onChange(!checked)}
       >
         <span className="switchKnob" />
       </button>
@@ -26,7 +27,7 @@ function SettingSwitch({ id, label, description, checked, onChange }) {
   );
 }
 
-// settings: array of { id, label, description, checked, onChange }
+// settings: array of { id, label, description, checked, disabled, onChange }
 function SettingsModal({ settings, onClose, children }) {
   return (
     <Modal title="Settings" titleId="settings-title" onClose={onClose}>

@@ -3,6 +3,7 @@ import path from "path";
 import {
   ANSWER_POOL_SIZE,
   getAnswerPool,
+  getHardModeError,
   getKeyStatuses,
   parseWordList,
   pickAnswer,
@@ -96,5 +97,35 @@ describe("scoreGuess", () => {
     expect(scoreGuess("geese", "those")).toEqual(["error", "error", "error", "correct", "correct"]);
     // CRANE's only E is matched exactly at index 4, so earlier E's are errors.
     expect(scoreGuess("eerie", "crane")).toEqual(["error", "error", "almost", "error", "correct"]);
+  });
+});
+
+describe("getHardModeError", () => {
+  const rows = (answer, ...guesses) => ({
+    board: guesses.map((g) => [...g.toUpperCase()]),
+    evaluations: guesses.map((g) => scoreGuess(g, answer)),
+  });
+
+  test("green letters must stay in place", () => {
+    const { board, evaluations } = rows("crane", "cloth");
+    expect(getHardModeError("about", board, evaluations)).toBe("1st letter must be C");
+    expect(getHardModeError("cabin", board, evaluations)).toBeNull();
+  });
+
+  test("yellow letters must be used somewhere", () => {
+    const { board, evaluations } = rows("crane", "about");
+    expect(getHardModeError("cloth", board, evaluations)).toBe("Guess must contain A");
+    expect(getHardModeError("cabin", board, evaluations)).toBeNull();
+  });
+
+  test("repeated hints need as many copies as were revealed", () => {
+    // THEME vs EERIE reveals two E's (one green at the end, one yellow).
+    const { board, evaluations } = rows("theme", "eerie");
+    expect(getHardModeError("those", board, evaluations)).toBe("Guess must contain 2 Es");
+    expect(getHardModeError("there", board, evaluations)).toBeNull();
+  });
+
+  test("anything goes before the first guess", () => {
+    expect(getHardModeError("zzzzz", [], [])).toBeNull();
   });
 });

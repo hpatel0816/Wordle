@@ -105,3 +105,30 @@ test("letters ruled out by earlier guesses cannot be typed", () => {
   const allowed = gameReducer(afterGuess, { type: "ADD_LETTER", letter: "a" });
   expect(allowed.board[1][0]).toBe("A");
 });
+
+describe("hard mode", () => {
+  const hard = (answer = "crane") => gameReducer(loaded(answer), { type: "SET_HARD_MODE", on: true });
+
+  test("rejects a guess that ignores a revealed hint, without using a row", () => {
+    const state = guess(guess(hard(), "about"), "recan");
+    expect(state.attempt).toBe(2);
+    const rejected = guess(guess(hard(), "nacre"), "about");
+    expect(rejected.attempt).toBe(1);
+    expect(rejected.message).toMatchObject({ text: "5th letter must be E", shake: true });
+  });
+
+  test("can only be switched at the start of a round", () => {
+    const midRound = guess(loaded(), "about");
+    const state = gameReducer(midRound, { type: "SET_HARD_MODE", on: true });
+    expect(state.hardMode).toBe(false);
+    expect(state.message.text).toBe("Hard mode can only be changed at the start of a round");
+
+    const over = guess(midRound, "crane");
+    expect(gameReducer(over, { type: "SET_HARD_MODE", on: true }).hardMode).toBe(true);
+  });
+
+  test("stays on for the next round", () => {
+    const over = guess(hard(), "crane");
+    expect(gameReducer(over, { type: "NEW_GAME", answer: "about" }).hardMode).toBe(true);
+  });
+});

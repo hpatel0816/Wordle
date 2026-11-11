@@ -9,14 +9,17 @@ import SettingsModal from './AppParts/SettingsModal';
 import { SettingsIcon } from './AppParts/Icons';
 import { loadWordList } from './Words';
 import { getAnswerPool, pickAnswer } from './gameLogic';
-import { gameReducer, initialState } from './gameState';
+import { canChangeHardMode, gameReducer, initialState } from './gameState';
 import { readPreference, writePreference } from './storage';
 
 // Provides { state, dispatch }; all game rules live in gameReducer.
 export const AppContext = createContext(null);
 
 function App() {
-  const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [state, dispatch] = useReducer(gameReducer, initialState, (s) => ({
+    ...s,
+    hardMode: readPreference("hardMode", false),
+  }));
   const [theme, setTheme] = useState(() => readPreference("theme", systemTheme()));
   const [highContrast, setHighContrast] = useState(() => readPreference("highContrast", false));
 
@@ -38,6 +41,10 @@ function App() {
     writePreference("theme", theme);
     writePreference("highContrast", highContrast);
   }, [theme, highContrast]);
+
+  useEffect(() => {
+    writePreference("hardMode", state.hardMode);
+  }, [state.hardMode]);
 
   const closeModal = () => {
     if (modal === "help") writePreference("seenHelp", true);
@@ -79,7 +86,18 @@ function App() {
 
   const gameOver = state.status === "won" || state.status === "lost";
 
+  const hardModeLocked = !canChangeHardMode(state);
   const settings = [
+    {
+      id: "hard-mode",
+      label: "Hard mode",
+      description: hardModeLocked
+        ? "Can only be changed at the start of a round"
+        : "Any revealed hints must be used in later guesses",
+      checked: state.hardMode,
+      disabled: hardModeLocked,
+      onChange: (on) => dispatch({ type: "SET_HARD_MODE", on }),
+    },
     {
       id: "light-theme",
       label: "Light theme",

@@ -190,6 +190,25 @@ test("settings switch to a light theme that persists across visits", async () =>
   expect(document.documentElement).toHaveAttribute("data-theme", "light");
 });
 
+test("hard mode is set in Settings and locks once a round is under way", async () => {
+  await renderLoaded();
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  fireEvent.click(screen.getByRole("switch", { name: "Hard mode" }));
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(localStorage.getItem("hardMode")).toBe("true");
+
+  guess("nacre");
+  guess("about");
+  expect(screen.getByRole("status")).toHaveTextContent("5th letter must be E");
+
+  fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+  const toggle = screen.getByRole("switch", { name: "Hard mode" });
+  expect(toggle).toHaveAttribute("aria-disabled", "true");
+  expect(toggle).toHaveAccessibleDescription("Can only be changed at the start of a round");
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute("aria-checked", "true");
+});
+
 test("typing is ignored while settings are open", async () => {
   await renderLoaded();
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));

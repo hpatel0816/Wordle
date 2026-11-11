@@ -1,4 +1,10 @@
-import { MAX_GUESSES, WORD_LENGTH, getKeyStatuses, scoreGuess } from "./gameLogic";
+import {
+  MAX_GUESSES,
+  WORD_LENGTH,
+  getHardModeError,
+  getKeyStatuses,
+  scoreGuess,
+} from "./gameLogic";
 
 export const emptyBoard = () =>
   Array.from({ length: MAX_GUESSES }, () => Array(WORD_LENGTH).fill(""));
@@ -14,7 +20,13 @@ export const initialState = {
   letterPos: 0, // index of the next tile in that row
   message: null, // { text, id, shake } for the latest user-facing message
   messageCount: 0,
+  hardMode: false, // revealed hints must be used in later guesses
 };
+
+// Hard mode can only be switched before the first guess or after a round.
+export function canChangeHardMode(state) {
+  return state.status !== "playing" || state.attempt === 0;
+}
 
 function startGame(state, answer) {
   return {
@@ -87,6 +99,11 @@ export function gameReducer(state, action) {
         return withMessage(state, "Not in word list", { shake: true });
       }
 
+      if (state.hardMode) {
+        const error = getHardModeError(guess, state.board, state.evaluations);
+        if (error) return withMessage(state, error, { shake: true });
+      }
+
       const attempt = state.attempt + 1;
       let status = "playing";
       if (guess === state.answer) status = "won";
@@ -100,6 +117,12 @@ export function gameReducer(state, action) {
         status,
       };
     }
+
+    case "SET_HARD_MODE":
+      if (!canChangeHardMode(state)) {
+        return withMessage(state, "Hard mode can only be changed at the start of a round");
+      }
+      return { ...state, hardMode: action.on };
 
     case "CLEAR_MESSAGE":
       // Only clear the message the caller saw, not a newer one.

@@ -80,3 +80,36 @@ export function getAnswerPool(words) {
 export function pickAnswer(words, random = Math.random) {
   return words[Math.floor(random() * words.length)];
 }
+
+const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
+
+// Hard mode: every hint revealed so far must be used in the next guess.
+// Green letters must stay in place, and yellow/green letters must appear
+// at least as many times as earlier rows showed them. Returns a message
+// explaining the first broken rule, or null when the guess is allowed.
+export function getHardModeError(guess, board, evaluations) {
+  const g = guess.toUpperCase();
+  const required = {};
+
+  for (let r = 0; r < evaluations.length; r++) {
+    const counts = {};
+    for (let c = 0; c < evaluations[r].length; c++) {
+      const letter = board[r][c];
+      const status = evaluations[r][c];
+      if (status === "correct" && g[c] !== letter) {
+        return `${ORDINALS[c]} letter must be ${letter}`;
+      }
+      if (status !== "error") counts[letter] = (counts[letter] || 0) + 1;
+    }
+    for (const [letter, count] of Object.entries(counts)) {
+      required[letter] = Math.max(required[letter] || 0, count);
+    }
+  }
+
+  for (const [letter, count] of Object.entries(required)) {
+    if ([...g].filter((l) => l === letter).length < count) {
+      return count > 1 ? `Guess must contain ${count} ${letter}s` : `Guess must contain ${letter}`;
+    }
+  }
+  return null;
+}
