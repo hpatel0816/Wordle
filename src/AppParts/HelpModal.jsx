@@ -46,7 +46,7 @@ function HelpModal({ onClose }) {
       <ul>
         <li><strong>Unlimited:</strong> a new word every round. Press Play Again whenever you like.</li>
         <li><strong>Daily:</strong> one puzzle a day, the same for everyone. A new one starts at midnight.</li>
-        <li><strong>Friends:</strong> start a live duel (race on the same word; first to solve it wins) or a friend board (everyone plays whenever they like, then compares results).</li>
+        <li><strong>Online:</strong> play a ranked match against someone at your level, race friends in a live duel, start a friend board, or practice against the computer.</li>
         <li><strong>Challenge:</strong> after a round, send a friend a link to a word of your choice.</li>
       </ul>
 

@@ -2,12 +2,15 @@
 
 A browser word game built with React, made for playing with friends. Guess the hidden five-letter word in six tries. After each guess the tiles show how close you were. Play unlimited rounds, take on the daily puzzle, or send a friend a word to guess.
 
-Play with friends two ways:
+Play online from the **Online** button:
 
+- **Ranked:** get matched with someone near your rating for a 3-minute 1-on-1 race. Wins raise your rating (Elo), and Statistics → Ranked shows the leaderboard.
 - **Live duels:** open a lobby, send the link, and race on the same word. The first to solve it wins, and everyone sees each other's colors (never letters) as they guess.
 - **Friend boards:** share a link, everyone plays the same word whenever they like, then compare results on a scoreboard.
 
-Ranked play against random opponents comes next (see [`docs/MULTIPLAYER_PLAN.md`](docs/MULTIPLAYER_PLAN.md)).
+- **Practice:** race WeBot, a computer opponent that runs in your browser (unranked).
+
+How it's built is in [`docs/MULTIPLAYER_PLAN.md`](docs/MULTIPLAYER_PLAN.md).
 
 WeWordle is a personal project inspired by Wordle. It isn't affiliated with The New York Times, or with other games that use a similar name.
 
@@ -38,7 +41,7 @@ The top bar has **?** (rules), a bar chart (statistics) and a gear (settings).
 - Accessible: colors meet WCAG AA contrast, keys are real buttons with screen-reader labels, dialogs trap focus, and each scored guess is announced.
 - A How To Play dialog that opens on your first visit.
 
-## Online play (live duels and friend boards)
+## Online play
 
 Online play uses [Supabase](https://supabase.com). Without it configured, the app is solo-only and the Friends button is hidden.
 
@@ -93,6 +96,7 @@ src/
   gameState.js          gameReducer: all game rules (typing, submitting, hard mode, win/lose, START)
   gameLogic.js          Pure helpers: scoring, key colors, hard-mode checks, daily answer,
                         share text, challenge codes
+  bot.js, useBotGame.js  WeBot, the computer opponent for practice duels
   savedGames.js         Saves each mode's round and picks the round to start or resume
   stats.js              Statistics and streak calculations
   share.js              Share sheet / clipboard helper

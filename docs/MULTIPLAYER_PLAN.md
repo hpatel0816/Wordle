@@ -1,6 +1,6 @@
 # WeWordle multiplayer plan
 
-Status: stages 2 (friend boards) and 3 (live duels) built and running against local Supabase, 2026-11-11. Rules as built: duels allow 2 to 8 players, a 3-second countdown and a 5-minute limit; the first solve wins and ends the duel; lobbies expire after an hour. Backend: **Supabase** (Postgres, Auth, Realtime).
+Status: stages 2 (friend boards), 3 (live duels) and 4 (ranked play) built and running against local Supabase, 2026-11-11. Ranked as built: closest-rating matching, 3-minute 1-on-1 duels, Elo with K = 32 from 1000, and a draw when nobody solves it. The computer opponent runs in the browser and is unranked. Rules as built: duels allow 2 to 8 players, a 3-second countdown and a 5-minute limit; the first solve wins and ends the duel; lobbies expire after an hour. Backend: **Supabase** (Postgres, Auth, Realtime).
 
 The solo game (Unlimited, Daily, challenge links) stays as it is. Multiplayer is added in three stages, and each stage can ship on its own.
 
