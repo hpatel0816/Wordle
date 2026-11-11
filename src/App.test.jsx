@@ -10,12 +10,12 @@ beforeEach(() => {
   localStorage.clear();
   // Skip the first-visit help dialog unless a test opts in.
   localStorage.setItem("seenHelp", "true");
-  jest.spyOn(Math, "random").mockReturnValue(0);
-  global.fetch = jest.fn(() => Promise.resolve({ text: () => Promise.resolve(WORDS) }));
+  vi.spyOn(Math, "random").mockReturnValue(0);
+  global.fetch = vi.fn(() => Promise.resolve({ text: () => Promise.resolve(WORDS) }));
 });
 
 afterEach(() => {
-  jest.restoreAllMocks();
+  vi.restoreAllMocks();
   delete global.fetch;
 });
 
@@ -95,13 +95,13 @@ test("pressing Enter on an incomplete row explains why", async () => {
 });
 
 test("the toast disappears after a moment", async () => {
-  jest.useFakeTimers();
+  vi.useFakeTimers();
   await renderLoaded();
   guess("zzzzz");
   expect(screen.getByRole("status")).toHaveTextContent("Not in word list");
-  act(() => jest.advanceTimersByTime(1600));
+  act(() => vi.advanceTimersByTime(1600));
   expect(screen.getByRole("status")).toBeEmptyDOMElement();
-  jest.useRealTimers();
+  vi.useRealTimers();
 });
 
 test("guessing the answer wins the game", async () => {

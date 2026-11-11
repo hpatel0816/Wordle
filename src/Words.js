@@ -1,4 +1,4 @@
-import wordBank from "./Word-Bank.txt";
+import wordBank from "./Word-Bank.txt?url";
 import { parseWordList } from "./gameLogic";
 
 // Fetch the bundled word list at runtime so it stays out of the JS bundle.
