@@ -36,3 +36,25 @@ export function scoreGuess(guess, answer) {
 
   return result;
 }
+
+const STATUS_RANK = { error: 1, almost: 2, correct: 3 };
+
+// Best-known status per letter across all submitted rows, e.g.
+// { A: "correct", E: "almost", T: "error" }. A letter whose best status
+// is "error" is not in the answer at all.
+export function getKeyStatuses(board, evaluations) {
+  const statuses = {};
+  evaluations.forEach((rowStatuses, r) => {
+    rowStatuses.forEach((status, c) => {
+      const letter = board[r][c];
+      if (!statuses[letter] || STATUS_RANK[status] > STATUS_RANK[statuses[letter]]) {
+        statuses[letter] = status;
+      }
+    });
+  });
+  return statuses;
+}
+
+export function pickAnswer(words, random = Math.random) {
+  return words[Math.floor(random() * words.length)];
+}

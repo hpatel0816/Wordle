@@ -1,4 +1,26 @@
-import { parseWordList, scoreGuess } from "./gameLogic";
+import { getKeyStatuses, parseWordList, pickAnswer, scoreGuess } from "./gameLogic";
+
+describe("getKeyStatuses", () => {
+  test("keeps the best status seen for each letter", () => {
+    const board = [["E", "E", "R", "I", "E"], ["C", "R", "A", "N", "E"]];
+    const evaluations = [scoreGuess("eerie", "crane"), scoreGuess("crane", "crane")];
+    const statuses = getKeyStatuses(board, evaluations);
+    expect(statuses).toMatchObject({ E: "correct", R: "correct", I: "error", C: "correct" });
+  });
+
+  test("a letter only ends up as error when it is not in the answer", () => {
+    const board = [["E", "E", "R", "I", "E"]];
+    expect(getKeyStatuses(board, [scoreGuess("eerie", "theme")])).toEqual({
+      E: "correct",
+      R: "error",
+      I: "error",
+    });
+  });
+});
+
+test("pickAnswer uses the random source to choose a word", () => {
+  expect(pickAnswer(["a", "b", "c", "d"], () => 0.5)).toBe("c");
+});
 
 describe("parseWordList", () => {
   test("splits LF line endings", () => {

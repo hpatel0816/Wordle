@@ -1,101 +1,59 @@
 import './App.css';
+import { createContext, useEffect, useReducer } from "react";
 import Display from "./AppParts/Display";
 import Keyboard from "./AppParts/Keyboard";
-import {createContext, useEffect, useState} from "react";
-import { displayDefault, generateWordSet } from './Words';
 import GameOver from './AppParts/GameOver';
+import { loadWordList } from './Words';
+import { pickAnswer } from './gameLogic';
+import { gameReducer, initialState } from './gameState';
 
-
-export const AppContext = createContext();
+// Provides { state, dispatch }; all game rules live in gameReducer.
+export const AppContext = createContext(null);
 
 function App() {
-  const [display, setDisplay] = useState(displayDefault);
-  const [currAttempt, setCurrAttempt] = useState({attempt: 0, letterPos: 0})
-  const [wordSet, setWordSet] = useState(new Set());
-  const[disabledLetters, setDisabledLetter] = useState([]);
-  const [correctWord, setCorrectWord] = useState("")
-  const [gameOver, setGameOver] = useState({gameOver: false, guessedWord: false});
+  const [state, dispatch] = useReducer(gameReducer, initialState);
 
   useEffect(() => {
-    generateWordSet().then((words) => {
-      setWordSet(words.wordSet);
-      setCorrectWord(words.todaysWord);
+    let cancelled = false;
+    loadWordList().then((words) => {
+      if (!cancelled) dispatch({ type: "LOADED", words, answer: pickAnswer(words) });
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const onSelectLetter = (keyVal) => {
-    if (currAttempt.letterPos > 4) return;
-    const newDisplay = [...display];
-    newDisplay[currAttempt.attempt][currAttempt.letterPos] = keyVal;
-    setDisplay(newDisplay);
-    setCurrAttempt({...currAttempt, letterPos: currAttempt.letterPos + 1});
-  }
+  // Physical keyboard input. dispatch is stable, so this binds once.
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key === "Enter") {
+        dispatch({ type: "SUBMIT" });
+      } else if (event.key === "Backspace") {
+        dispatch({ type: "DELETE_LETTER" });
+      } else if (/^[a-z]$/i.test(event.key)) {
+        dispatch({ type: "ADD_LETTER", letter: event.key });
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
-  const onDelete = () => {
-    if (currAttempt.letterPos === 0) return;
-    const newDisplay = [...display];
-    newDisplay[currAttempt.attempt][currAttempt.letterPos -1] = "";
-    setDisplay(newDisplay)
-    setCurrAttempt({...currAttempt, letterPos: currAttempt.letterPos - 1})
+  useEffect(() => {
+    if (state.message) alert(state.message.text);
+  }, [state.message]);
 
-  }
-
-  const onEnter = () => {
-    if (currAttempt.letterPos !== 5) return;
-
-    let currWord = "";
-    for (let i =  0; i < 5; i++) {
-      currWord += display[currAttempt.attempt][i];
-    }
-
-    currWord = currWord.toLowerCase();
-
-    if (!wordSet.has(currWord)) {
-      alert("Word Not Found");
-      return;
-    }
-
-    setCurrAttempt({attempt: currAttempt.attempt + 1, letterPos: 0});
-
-    // Grey out keys for letters that are not in the answer at all.
-    const answerUpper = correctWord.toUpperCase();
-    const absent = display[currAttempt.attempt].filter((l) => !answerUpper.includes(l));
-    setDisabledLetter((prev) => [...new Set([...prev, ...absent])]);
-
-    if (currWord === correctWord) {
-      setGameOver({gameOver: true, guessedWord: true});
-      return;
-    }
-
-    if (currAttempt.attempt === 5) {
-      setGameOver({gameOver: true, guessedWord : false});
-    }
-  };
+  const gameOver = state.status === "won" || state.status === "lost";
 
   return (
     <div className="App">
       <nav>
         <h1>Wordle</h1>
       </nav>
-      <AppContext.Provider 
-        value={{
-          display,
-          setDisplay,
-          currAttempt,
-          setCurrAttempt,
-          onSelectLetter,
-          onDelete,
-          onEnter,
-          correctWord,
-          setDisabledLetter,
-          disabledLetters,
-          gameOver,
-          setGameOver
-        }}
-      >
-        <div className = "game">
+      <AppContext.Provider value={{ state, dispatch }}>
+        <div className="game">
           <Display />
-          {gameOver.gameOver ? <GameOver /> : <Keyboard />}
+          {gameOver ? <GameOver /> : <Keyboard />}
         </div>
       </AppContext.Provider>
     </div>
