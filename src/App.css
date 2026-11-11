@@ -1,25 +1,51 @@
+/* Design tokens: change colors and fonts here, not in individual rules. */
+:root {
+  --font: Arial, Helvetica, sans-serif;
+
+  --color-bg: #121212;
+  --color-text: #ffffff;
+  --color-divider: #808080;
+
+  --color-tile-border: #3a3a3c;
+  --color-tile-border-filled: #565758;
+
+  --color-key: #808080;
+  --color-key-text: #ffffff;
+
+  --color-correct: #528d4e;
+  --color-almost: #b49f39;
+  --color-absent: #3a393c;
+  --color-status-text: #ffffff;
+
+  --color-toast-bg: #ffffff;
+  --color-toast-text: #121212;
+
+  --radius: 4px;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  background-color: var(--color-bg);
+}
+
 .App {
   text-align: center;
-  background-color: #121212;
+  background-color: var(--color-bg);
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  color: white;
-}
-
-body {
-  padding: 0%;
-  margin: 0;
-  background-color: #121212;
+  color: var(--color-text);
+  font-family: var(--font);
 }
 
 nav {
   height: 60px;
   width: 100%;
   margin: 0;
-  border-bottom: 1px solid grey;
+  border-bottom: 1px solid var(--color-divider);
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -27,8 +53,7 @@ nav {
 
 nav h1 {
   margin: 0;
-  font-family: Helvetica, Arial, sans-serif;
-  color: white;
+  color: var(--color-text);
   font-size: clamp(28px, 7vw, 40px);
 }
 
@@ -63,29 +88,38 @@ nav h1 {
 
 .letter {
   aspect-ratio: 1;
-  border: 2px solid #565758;
+  border: 2px solid var(--color-tile-border);
   display: grid;
   place-items: center;
   font-size: clamp(20px, 6vw, 30px);
   font-weight: bolder;
-  color: white;
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-text);
   box-sizing: border-box;
 }
 
-#correct {
-  background-color: #528d4e;
-  border-color: #528d4e;
+.letter.filled {
+  border-color: var(--color-tile-border-filled);
 }
 
-#almost {
-  background-color: #b49f39;
-  border-color: #b49f39;
+.letter.correct,
+.letter.almost,
+.letter.error {
+  color: var(--color-status-text);
 }
 
-#error {
-  background-color: #3a393c;
-  border-color: #3a393c;
+.letter.correct {
+  background-color: var(--color-correct);
+  border-color: var(--color-correct);
+}
+
+.letter.almost {
+  background-color: var(--color-almost);
+  border-color: var(--color-almost);
+}
+
+.letter.error {
+  background-color: var(--color-absent);
+  border-color: var(--color-absent);
 }
 
 .keyboard {
@@ -95,17 +129,15 @@ nav h1 {
   gap: 6px;
 }
 
-.line1,
-.line2,
-.line3 {
+.keyboardRow {
   display: flex;
   justify-content: center;
   gap: 6px;
 }
 
 /* Half-key spacers on the middle row, like a physical keyboard. */
-.line2::before,
-.line2::after {
+.keyboardRow.offset::before,
+.keyboardRow.offset::after {
   content: "";
   flex: 0.5;
 }
@@ -114,14 +146,13 @@ nav h1 {
   flex: 1;
   min-width: 0;
   height: 58px;
-  border-radius: 4px;
+  border-radius: var(--radius);
   display: grid;
   place-items: center;
   font-size: clamp(13px, 3.8vw, 20px);
   font-weight: bold;
-  background-color: grey;
-  color: white;
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-key);
+  color: var(--color-key-text);
   cursor: pointer;
   user-select: none;
 }
@@ -131,16 +162,22 @@ nav h1 {
   font-size: clamp(10px, 2.8vw, 14px);
 }
 
+.key.correct,
+.key.almost,
+.key.error {
+  color: var(--color-status-text);
+}
+
 .key.correct {
-  background-color: #528d4e;
+  background-color: var(--color-correct);
 }
 
 .key.almost {
-  background-color: #b49f39;
+  background-color: var(--color-almost);
 }
 
 .key.error {
-  background-color: #3a393c;
+  background-color: var(--color-absent);
   cursor: not-allowed;
 }
 
@@ -156,12 +193,12 @@ nav h1 {
   margin-top: 8px;
   padding: 12px 32px;
   border: none;
-  border-radius: 4px;
-  background-color: #528d4e;
-  color: white;
+  border-radius: var(--radius);
+  background-color: var(--color-correct);
+  color: var(--color-status-text);
   font-size: 18px;
   font-weight: bold;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font);
   cursor: pointer;
 }
 
@@ -180,11 +217,10 @@ nav h1 {
 }
 
 .toast {
-  background-color: white;
-  color: #121212;
+  background-color: var(--color-toast-bg);
+  color: var(--color-toast-text);
   padding: 12px 16px;
-  border-radius: 4px;
-  font-family: Arial, Helvetica, sans-serif;
+  border-radius: var(--radius);
   font-weight: bold;
   font-size: 15px;
   white-space: nowrap;

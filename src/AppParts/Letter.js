@@ -8,7 +8,7 @@ function Letter({ row, col }) {
   const status = state.evaluations[row]?.[col];
 
   return (
-    <div className="letter" id={status}>
+    <div className={["letter", status ?? (letter && "filled")].filter(Boolean).join(" ")}>
       {letter}
     </div>
   );

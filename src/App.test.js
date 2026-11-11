@@ -33,6 +33,11 @@ function guess(word) {
   press("Enter");
 }
 
+// "correct" | "almost" | "error", or "" before the row is submitted.
+function tileState(el) {
+  return ["correct", "almost", "error"].find((c) => el.classList.contains(c)) ?? "";
+}
+
 function rowLetters(rowIndex) {
   return Array.from(document.querySelectorAll(".row")[rowIndex].children);
 }
@@ -41,7 +46,7 @@ test("accepts a valid word from an LF word list and colors the row", async () =>
   await renderLoaded();
   guess("about");
   expect(screen.queryByRole("status")).toBeEmptyDOMElement();
-  expect(rowLetters(0).map((el) => el.id)).toEqual(["almost", "error", "error", "error", "error"]);
+  expect(rowLetters(0).map(tileState)).toEqual(["almost", "error", "error", "error", "error"]);
 });
 
 test("keyboard keys show the best status for each guessed letter", async () => {
@@ -71,7 +76,7 @@ test("rejects a word that is not in the list without using up a row", async () =
   guess("zzzzz");
   expect(screen.getByRole("status")).toHaveTextContent("Not in word list");
   expect(document.querySelectorAll(".row")[0]).toHaveClass("shake");
-  expect(rowLetters(0).every((el) => !el.id)).toBe(true);
+  expect(rowLetters(0).every((el) => tileState(el) === "")).toBe(true);
 });
 
 test("pressing Enter on an incomplete row explains why", async () => {
@@ -104,7 +109,7 @@ test("Play Again starts a fresh round", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Play Again" }));
 
   expect(screen.queryByText("You Correctly Guessed")).not.toBeInTheDocument();
-  expect(document.querySelectorAll(".letter[id]")).toHaveLength(0);
+  expect([...document.querySelectorAll(".letter")].every((el) => tileState(el) === "")).toBe(true);
   expect([...document.querySelectorAll(".letter")].every((el) => el.textContent === "")).toBe(true);
 
   // The new round accepts input on the first row again.

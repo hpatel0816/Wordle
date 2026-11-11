@@ -16,7 +16,7 @@ function Keyboard() {
   return (
     <div className="keyboard">
       {KEY_ROWS.map((keys, i) => (
-        <div className={`line${i + 1}`} key={i}>
+        <div className={i === 1 ? "keyboardRow offset" : "keyboardRow"} key={i}>
           {keys.map((key) => (
             <Key
               key={key}
