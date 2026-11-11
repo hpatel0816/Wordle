@@ -2,7 +2,12 @@
 
 A browser word game built with React, made for playing with friends. Guess the hidden five-letter word in six tries. After each guess the tiles show how close you were. Play unlimited rounds, take on the daily puzzle, or send a friend a word to guess.
 
-**Friend boards** are the first multiplayer feature: share a link, everyone plays the same hidden word, and you compare results on a scoreboard. Live duels and ranked play come next (see [`docs/MULTIPLAYER_PLAN.md`](docs/MULTIPLAYER_PLAN.md)).
+Play with friends two ways:
+
+- **Live duels:** open a lobby, send the link, and race on the same word. The first to solve it wins, and everyone sees each other's colors (never letters) as they guess.
+- **Friend boards:** share a link, everyone plays the same word whenever they like, then compare results on a scoreboard.
+
+Ranked play against random opponents comes next (see [`docs/MULTIPLAYER_PLAN.md`](docs/MULTIPLAYER_PLAN.md)).
 
 WeWordle is a personal project inspired by Wordle. It isn't affiliated with The New York Times, or with other games that use a similar name.
 
@@ -33,7 +38,7 @@ The top bar has **?** (rules), a bar chart (statistics) and a gear (settings).
 - Accessible: colors meet WCAG AA contrast, keys are real buttons with screen-reader labels, dialogs trap focus, and each scored guess is announced.
 - A How To Play dialog that opens on your first visit.
 
-## Online play (friend boards)
+## Online play (live duels and friend boards)
 
 Online play uses [Supabase](https://supabase.com). Without it configured, the app is solo-only and the Friends button is hidden.
 
@@ -92,7 +97,8 @@ src/
   stats.js              Statistics and streak calculations
   share.js              Share sheet / clipboard helper
   Words.js              Fetches Word-Bank.txt at runtime
-  online/               Supabase client, API wrappers, and useFriendBoard (joining, server-scored guesses, scoreboard)
+  online/               Supabase client, API wrappers, and useOnlineGame (joining, server-scored guesses,
+                        Realtime updates, duel countdown and timer)
   storage.js            Safe localStorage read/write
   brand.js              The app name (APP_NAME)
   Word-Bank.txt         5,757 five-letter words, most common first, one per line (LF)
