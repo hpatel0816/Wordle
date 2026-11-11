@@ -160,3 +160,56 @@ describe("START", () => {
     expect(gameReducer(first, { type: "START", answer: "about" }).gameId).toBe(first.gameId + 1);
   });
 });
+
+describe("friend boards", () => {
+  const board = () =>
+    gameReducer(loaded(), { type: "START", mode: "board", boardId: "b1", hardMode: false });
+
+  test("a valid guess waits for the server instead of being scored locally", () => {
+    const state = guess(board(), "about");
+    expect(state).toMatchObject({ pending: true, attempt: 0, answer: "" });
+    expect(state.evaluations).toEqual([]);
+    // Input is locked while waiting.
+    expect(gameReducer(state, { type: "ADD_LETTER", letter: "c" })).toBe(state);
+    expect(gameReducer(state, { type: "DELETE_LETTER" })).toBe(state);
+  });
+
+  test("local checks still reject bad words before anything is sent", () => {
+    const state = guess(board(), "zzzzz");
+    expect(state.pending).toBe(false);
+    expect(state.message.text).toBe("Not in word list");
+  });
+
+  test("the server's colors are applied, and the answer arrives when the round ends", () => {
+    let state = gameReducer(guess(board(), "about"), {
+      type: "GUESS_RESULT",
+      result: ["almost", "error", "error", "error", "error"],
+    });
+    expect(state).toMatchObject({ pending: false, attempt: 1, status: "playing", answer: "" });
+
+    state = gameReducer(guess(state, "crane"), {
+      type: "GUESS_RESULT",
+      result: Array(5).fill("correct"),
+      answer: "crane",
+    });
+    expect(state).toMatchObject({ status: "won", answer: "crane", justFinished: true });
+  });
+
+  test("a rejected guess unlocks input and explains why", () => {
+    const state = gameReducer(guess(board(), "about"), { type: "GUESS_FAILED", message: "This board has closed" });
+    expect(state.pending).toBe(false);
+    expect(state.attempt).toBe(0);
+    expect(state.message).toMatchObject({ text: "This board has closed", shake: true });
+  });
+
+  test("resuming replays rows the server already scored", () => {
+    const state = gameReducer(loaded(), {
+      type: "START",
+      mode: "board",
+      boardId: "b1",
+      rows: [{ word: "about", result: ["almost", "error", "error", "error", "error"] }],
+    });
+    expect(state.board[0].join("")).toBe("ABOUT");
+    expect(state).toMatchObject({ attempt: 1, status: "playing", justFinished: false });
+  });
+});

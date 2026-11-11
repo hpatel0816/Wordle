@@ -9,16 +9,21 @@ import SettingsModal from './AppParts/SettingsModal';
 import StatsModal from './AppParts/StatsModal';
 import ChallengeModal from './AppParts/ChallengeModal';
 import { SettingsIcon, StatsIcon } from './AppParts/Icons';
-import { loadStats, recordResult, saveStats } from './stats';
+import { STATS_MODES, loadStats, recordResult, saveStats } from './stats';
 import { loadWordList } from './Words';
 import { CHALLENGE_PARAM, decodeChallenge, getAnswerPool, getDayNumber } from './gameLogic';
 import { canChangeHardMode, gameReducer, initialState } from './gameState';
 import { readPreference, writePreference } from './storage';
 import { roundFor, saveGame } from './savedGames';
 import ModeSwitch from './AppParts/ModeSwitch';
+import FriendsModal from './AppParts/FriendsModal';
+import { useFriendBoard } from './online/useFriendBoard';
+import { boardUrl } from './online/api';
+import { SHARE_MESSAGES, shareOrCopy } from './share';
+import { APP_NAME } from './brand';
 
-// Provides { state, dispatch, startRound, openModal, display }; all game
-// rules live in gameReducer.
+// Provides { state, dispatch, startRound, openModal, display, board,
+// copyInvite }; all game rules live in gameReducer.
 export const AppContext = createContext(null);
 
 function App() {
@@ -26,8 +31,8 @@ function App() {
   const [theme, setTheme] = useState(() => readPreference("theme", systemTheme()));
   const [highContrast, setHighContrast] = useState(() => readPreference("highContrast", false));
 
-  // Which dialog is open: "help" | "settings" | "stats" | "challenge" | null. The rules open
-  // automatically on a player's first visit.
+  // Which dialog is open: "help" | "settings" | "stats" | "challenge" |
+  // "friends" | null. The rules open automatically on a player's first visit.
   const [modal, setModal] = useState(() => (readPreference("seenHelp", false) ? null : "help"));
   const modalRef = useRef(modal);
   modalRef.current = modal;
@@ -73,10 +78,10 @@ function App() {
   }));
 
   // Record each round once, when the player's guess ends it. Resumed
-  // rounds and friends' challenges don't count.
+  // rounds, challenges and friend boards don't count.
   const recordedGameRef = useRef(null);
   useEffect(() => {
-    if (!state.justFinished || state.mode === "challenge") return;
+    if (!state.justFinished || !STATS_MODES.includes(state.mode)) return;
     if (recordedGameRef.current === state.gameId) return;
     recordedGameRef.current = state.gameId;
     const result = { won: state.status === "won", attempts: state.attempt, day: state.day };
@@ -100,9 +105,17 @@ function App() {
     });
   }, [state.status, state.mode, state.answer, state.day, state.hardMode, state.board, state.attempt]);
 
-  const closeModal = () => {
-    if (modal === "help") writePreference("seenHelp", true);
+  const closeModal = useCallback(() => {
+    if (modalRef.current === "help") writePreference("seenHelp", true);
     setModal(null);
+  }, []);
+
+  const friends = useFriendBoard({ state, dispatch, openModal: setModal, closeModal });
+
+  const copyInvite = async () => {
+    const result = await shareOrCopy(`Play my ${APP_NAME} friend board: ${boardUrl(state.boardId)}`);
+    if (result === "copied") dispatch({ type: "SHOW_MESSAGE", text: "Invite link copied" });
+    else if (SHARE_MESSAGES[result]) dispatch({ type: "SHOW_MESSAGE", text: SHARE_MESSAGES[result] });
   };
 
   useEffect(() => {
@@ -155,14 +168,18 @@ function App() {
 
   const gameOver = state.status === "won" || state.status === "lost";
 
-  const hardModeLocked = !canChangeHardMode(state);
+  // A friend board's hard mode is set by whoever created it.
+  const boardRules = state.mode === "board" && state.status === "playing";
+  const hardModeLocked = boardRules || !canChangeHardMode(state);
   const settings = [
     {
       id: "hard-mode",
       label: "Hard mode",
-      description: hardModeLocked
-        ? "Can only be changed at the start of a round"
-        : "Any revealed hints must be used in later guesses",
+      description: boardRules
+        ? "Set by this friend board"
+        : hardModeLocked
+          ? "Can only be changed at the start of a round"
+          : "Any revealed hints must be used in later guesses",
       checked: state.status === "playing" ? state.hardMode : hardModePref,
       disabled: hardModeLocked,
       onChange: setHardMode,
@@ -188,6 +205,8 @@ function App() {
     startRound,
     openModal: setModal,
     display: { highContrast, light: theme === "light" },
+    board: friends.board,
+    copyInvite,
   };
 
   return (
@@ -225,10 +244,24 @@ function App() {
             </button>
           </SettingsModal>
         )}
+        {modal === "friends" && (
+          <FriendsModal
+            friends={friends}
+            hardMode={hardModePref}
+            inBoard={state.mode === "board"}
+            onCopyInvite={copyInvite}
+            onClose={() => {
+              friends.cancelInvite();
+              closeModal();
+            }}
+          />
+        )}
         {modal === "challenge" && (
           <ChallengeModal
-            // Don't suggest the daily answer: it would spoil the friend's daily.
-            suggestedWord={state.status !== "playing" && state.mode !== "daily" ? state.answer : ""}
+            // Only suggest words that don't spoil a friend's daily or board.
+            suggestedWord={
+              state.status !== "playing" && ["unlimited", "challenge"].includes(state.mode) ? state.answer : ""
+            }
             onClose={closeModal}
           />
         )}
@@ -238,7 +271,7 @@ function App() {
             initialMode={state.mode === "daily" ? "daily" : "unlimited"}
             today={getDayNumber()}
             highlight={
-              state.status === "won" && state.mode !== "challenge"
+              state.status === "won" && STATS_MODES.includes(state.mode)
                 ? { mode: state.mode, attempts: state.attempt }
                 : null
             }

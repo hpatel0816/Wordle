@@ -21,9 +21,12 @@ function Display() {
         {state.board.map((letters, row) => {
           // Changing the key on each new error remounts the row, replaying the shake.
           const shake = state.message?.shake && row === state.attempt;
+          // Friend boards: the row pulses while the server checks the guess.
+          const checking = state.pending && row === state.attempt;
           return (
             <div
-              className={shake ? "row shake" : "row"}
+              className={["row", shake && "shake", checking && "checking"].filter(Boolean).join(" ")}
+              aria-busy={checking || undefined}
               key={shake ? `${row}-${state.message.id}` : row}
               role="group"
               aria-label={`Guess ${row + 1}`}

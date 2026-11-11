@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../App';
 import { buildShareText, msUntilNextDay } from '../gameLogic';
 import { SHARE_MESSAGES, shareOrCopy } from '../share';
+import { boardUrl } from '../online/api';
+import Scoreboard from './Scoreboard';
 
 function formatCountdown(ms) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -37,26 +39,31 @@ function NextDaily({ onReady }) {
 }
 
 function GameOver() {
-  const { state, dispatch, startRound, openModal, display } = useContext(AppContext);
+  const { state, dispatch, startRound, openModal, display, board, copyInvite } = useContext(AppContext);
   const won = state.status === "won";
   const daily = state.mode === "daily";
   const unlimited = state.mode === "unlimited";
+  const friendBoard = state.mode === "board";
 
   const share = async () => {
-    const result = await shareOrCopy(buildShareText(state, display));
+    const link = friendBoard ? boardUrl(state.boardId) : undefined;
+    const result = await shareOrCopy(buildShareText(state, display, link));
     if (SHARE_MESSAGES[result]) dispatch({ type: "SHOW_MESSAGE", text: SHARE_MESSAGES[result] });
   };
 
   return (
-    <div className="gameOver" role="status">
-      <p className="gameOverResult">{won ? "You Correctly Guessed" : "Could Not Guess The Word"}</p>
-      <h2>Word: {state.answer.toUpperCase()}</h2>
-      {won && (
-        <p className="gameOverResult">
-          You Guessed In {state.attempt} {state.attempt === 1 ? "Try" : "Tries"}
-        </p>
-      )}
+    <div className="gameOver">
+      <div role="status">
+        <p className="gameOverResult">{won ? "You Correctly Guessed" : "Could Not Guess The Word"}</p>
+        <h2>Word: {state.answer.toUpperCase()}</h2>
+        {won && !friendBoard && (
+          <p className="gameOverResult">
+            You Guessed In {state.attempt} {state.attempt === 1 ? "Try" : "Tries"}
+          </p>
+        )}
+      </div>
       {daily && <NextDaily onReady={() => startRound("daily")} />}
+      {friendBoard && <Scoreboard board={board} />}
       <div className="gameOverActions">
         {/* autoFocus lets Enter start the next round */}
         <button type="button" className="playAgain" onClick={() => startRound("unlimited")} autoFocus>
@@ -65,12 +72,20 @@ function GameOver() {
         <button type="button" className="secondaryButton" onClick={share}>
           Share
         </button>
-        <button type="button" className="secondaryButton" onClick={() => openModal("stats")}>
-          Statistics
-        </button>
-        <button type="button" className="secondaryButton" onClick={() => openModal("challenge")}>
-          Challenge a friend
-        </button>
+        {friendBoard ? (
+          <button type="button" className="secondaryButton" onClick={copyInvite}>
+            Invite friends
+          </button>
+        ) : (
+          <>
+            <button type="button" className="secondaryButton" onClick={() => openModal("stats")}>
+              Statistics
+            </button>
+            <button type="button" className="secondaryButton" onClick={() => openModal("challenge")}>
+              Challenge a friend
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

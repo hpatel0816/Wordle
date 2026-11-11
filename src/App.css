@@ -406,7 +406,8 @@ button:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .shake,
-  .switchKnob {
+  .switchKnob,
+  .row.checking .letter {
     animation: none;
     transition: none;
   }
@@ -694,4 +695,142 @@ button:focus-visible {
 
 .challengeFeedback.error {
   font-weight: bold;
+}
+
+/* ----- Friend boards ----- */
+.muted {
+  color: var(--color-muted-text);
+}
+
+.small {
+  font-size: 13px;
+}
+
+.linkButton {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-brand-strong);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 2px solid var(--color-tile-border-filled);
+  border-radius: var(--radius);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font);
+  font-size: 18px;
+}
+
+.nameInput:focus-visible {
+  outline: 3px solid var(--color-text);
+  outline-offset: 1px;
+}
+
+.friendsActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.friendsActions .playAgain,
+.friendsActions .secondaryButton {
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 16px;
+}
+
+.playAgain:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.row.checking .letter {
+  animation: checking 0.9s ease-in-out infinite;
+}
+
+@keyframes checking {
+  50% { border-color: var(--color-brand); }
+}
+
+.scoreboard {
+  width: 100%;
+  max-width: 360px;
+  margin: 4px auto 0;
+  text-align: left;
+}
+
+.scoreboard h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.scoreboard ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.scoreboard li {
+  display: grid;
+  grid-template-columns: 20px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+}
+
+.scoreboard li.me {
+  background-color: var(--color-surface);
+}
+
+.scoreboard .rank {
+  font-weight: bold;
+  color: var(--color-muted-text);
+}
+
+.playerName {
+  font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playerScore {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.miniGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.miniRow {
+  display: flex;
+  gap: 1px;
+}
+
+.miniTile {
+  width: 6px;
+  height: 6px;
+  background-color: var(--color-absent);
+}
+
+.miniTile.correct {
+  background-color: var(--color-correct);
+}
+
+.miniTile.almost {
+  background-color: var(--color-almost);
 }
